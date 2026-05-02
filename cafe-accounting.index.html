@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>派西夫咖啡 · 記帳系統</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600&family=Kaisei+Opti:wght@400;700&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+
+<!-- Firebase SDKs -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+  // =============================================
+  // 🔧 請貼上你的 Firebase 設定（從 Firebase Console 複製）
+  // =============================================
+  const firebaseConfig = {
+    apiKey: "AIzaSyDVC7q--cmOo3UxteYvvZaLauI53ccGPhQ",
+    authDomain: "passive-cafe.firebaseapp.com",
+    projectId: "passive-cafe",
+    storageBucket: "passive-cafe.firebasestorage.app",
+    messagingSenderId: "822955816181",
+    appId: "1:822955816181:web:ab1ce0f591941d386fc1bc",
+    measurementId: "G-WSZ6JS2VYP"
+  };
+  // =============================================
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  window._firebase = { db, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot };
+</script>
+
+<style>
+  :root {
+    --cream: #F5EFE0;
+    --cream-dark: #EDE3CC;
+    --brown-deep: #2C1A0E;
+    --brown-mid: #5C3D1E;
+    --brown-light: #8B6343;
+    --caramel: #C4812B;
+    --caramel-light: #E6A84A;
+    --milk: #FAF6EE;
+    --ink: #1A1208;
+    --muted: #9B8570;
+    --red: #C0392B;
+    --green: #27795A;
+    --surface: rgba(255,255,255,0.6);
+    --shadow: 0 4px 24px rgba(44,26,14,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--cream);
+    font-family: 'Noto Sans TC', sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 10%, rgba(196,129,43,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(92,61,30,0.06) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+
+  /* NAV */
+  .nav {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--brown-deep);
+    padding: 0 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 56px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+  .nav-brand {
+    font-family: 'Kaisei Opti', serif;
+    font-size: 1.15rem; color: var(--caramel-light);
+    letter-spacing: 0.08em;
+  }
+  .nav-tabs { display: flex; gap: 0; }
+  .nav-tab {
+    padding: 0 1.5rem; height: 56px;
+    display: flex; align-items: center;
+    font-size: 0.85rem; font-weight: 500;
+    color: var(--muted); cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s; letter-spacing: 0.05em;
+    background: none; border-top: none; border-left: none; border-right: none;
+  }
+  .nav-tab:hover { color: var(--cream); }
+  .nav-tab.active { color: var(--caramel-light); border-bottom-color: var(--caramel); }
+
+  /* PAGES */
+  .page { display: none; padding: 2rem; max-width: 860px; margin: 0 auto; position: relative; z-index: 1; }
+  .page.active { display: block; }
+
+  /* CARD */
+  .card {
+    background: var(--surface);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(196,129,43,0.15);
+    border-radius: 16px;
+    padding: 1.8rem 2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 0.95rem; font-weight: 600;
+    color: var(--brown-mid);
+    margin-bottom: 1.2rem;
+    padding-bottom: 0.7rem;
+    border-bottom: 1px dashed rgba(139,99,67,0.25);
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .card-title .icon { font-size: 1rem; }
+
+  /* PAGE HEADER */
+  .page-header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 1.8rem;
+  }
+  .page-title {
+    font-family: 'Kaisei Opti', serif;
+    font-size: 1.6rem; color: var(--brown-deep);
+    letter-spacing: 0.02em;
+  }
+  .page-date {
+    font-size: 0.85rem; color: var(--muted);
+    font-family: 'Noto Serif TC', serif;
+  }
+
+  /* FORM */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .form-full { grid-column: 1 / -1; }
+  
+  .field { display: flex; flex-direction: column; gap: 0.35rem; }
+  .field label {
+    font-size: 0.78rem; font-weight: 500;
+    color: var(--brown-light); letter-spacing: 0.04em;
+  }
+  .field input, .field textarea, .field select {
+    background: rgba(255,255,255,0.75);
+    border: 1px solid rgba(139,99,67,0.25);
+    border-radius: 8px;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.9rem; font-family: 'Noto Sans TC', sans-serif;
+    color: var(--ink);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+  }
+  .field input:focus, .field textarea:focus {
+    outline: none;
+    border-color: var(--caramel);
+    box-shadow: 0 0 0 3px rgba(196,129,43,0.12);
+  }
+  .field textarea { resize: vertical; min-height: 72px; }
+
+  /* UPLOAD ZONE */
+  .upload-zone {
+    border: 2px dashed rgba(139,99,67,0.3);
+    border-radius: 10px;
+    padding: 1.2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: rgba(255,255,255,0.4);
+    position: relative;
+  }
+  .upload-zone:hover { border-color: var(--caramel); background: rgba(196,129,43,0.04); }
+  .upload-zone input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .upload-zone .upload-icon { font-size: 1.6rem; margin-bottom: 0.3rem; }
+  .upload-zone .upload-label { font-size: 0.8rem; color: var(--muted); }
+  .upload-preview {
+    display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.8rem;
+  }
+  .upload-preview img {
+    width: 72px; height: 72px; object-fit: cover;
+    border-radius: 6px; border: 1px solid rgba(139,99,67,0.2);
+  }
+
+  /* DIVIDER ROW */
+  .purchase-row {
+    display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1.5fr auto;
+    gap: 0.5rem; align-items: end; margin-bottom: 0.6rem;
+  }
+  .purchase-row label { font-size: 0.72rem; color: var(--muted); }
+  .btn-icon {
+    background: none; border: none; cursor: pointer;
+    font-size: 1.1rem; padding: 0.5rem; color: var(--muted);
+    border-radius: 6px; transition: all 0.15s; line-height: 1;
+    height: 36px; display: flex; align-items: center;
+  }
+  .btn-icon:hover { background: rgba(192,57,43,0.1); color: var(--red); }
+  .btn-add {
+    background: none; border: 1px dashed rgba(139,99,67,0.35);
+    border-radius: 8px; padding: 0.5rem 1rem;
+    font-size: 0.8rem; color: var(--brown-light); cursor: pointer;
+    width: 100%; margin-top: 0.3rem;
+    transition: all 0.15s; font-family: 'Noto Sans TC', sans-serif;
+  }
+  .btn-add:hover { background: rgba(196,129,43,0.06); border-color: var(--caramel); }
+
+  /* SUBMIT BUTTON */
+  .btn-submit {
+    background: var(--brown-deep);
+    color: var(--caramel-light);
+    border: none; border-radius: 10px;
+    padding: 0.9rem 2.5rem;
+    font-size: 0.95rem; font-family: 'Noto Serif TC', serif;
+    font-weight: 600; letter-spacing: 0.06em;
+    cursor: pointer; transition: all 0.2s;
+    width: 100%; margin-top: 0.5rem;
+  }
+  .btn-submit:hover { background: var(--brown-mid); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(44,26,14,0.2); }
+  .btn-submit:active { transform: translateY(0); }
+  .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* STATUS MESSAGE */
+  .status-msg {
+    padding: 0.8rem 1rem; border-radius: 8px;
+    font-size: 0.85rem; margin-top: 0.8rem;
+    display: none;
+  }
+  .status-msg.success { background: rgba(39,121,90,0.1); color: var(--green); border: 1px solid rgba(39,121,90,0.2); }
+  .status-msg.error { background: rgba(192,57,43,0.1); color: var(--red); border: 1px solid rgba(192,57,43,0.2); }
+
+  /* ===== ADMIN PAGE ===== */
+  .admin-toolbar {
+    display: flex; gap: 0.8rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap;
+  }
+  .admin-toolbar input[type="date"], .admin-toolbar input[type="month"] {
+    background: var(--surface); border: 1px solid rgba(139,99,67,0.25);
+    border-radius: 8px; padding: 0.55rem 0.8rem;
+    font-size: 0.85rem; font-family: 'Noto Sans TC', sans-serif;
+    color: var(--ink); cursor: pointer;
+  }
+  .btn-secondary {
+    background: var(--surface); border: 1px solid rgba(139,99,67,0.3);
+    border-radius: 8px; padding: 0.55rem 1rem;
+    font-size: 0.82rem; color: var(--brown-mid); cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif; transition: all 0.15s;
+  }
+  .btn-secondary:hover { background: var(--cream-dark); }
+  .btn-danger {
+    background: none; border: 1px solid rgba(192,57,43,0.3);
+    border-radius: 6px; padding: 0.3rem 0.7rem;
+    font-size: 0.78rem; color: var(--red); cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif; transition: all 0.15s;
+  }
+  .btn-danger:hover { background: rgba(192,57,43,0.08); }
+  .btn-edit {
+    background: none; border: 1px solid rgba(139,99,67,0.3);
+    border-radius: 6px; padding: 0.3rem 0.7rem;
+    font-size: 0.78rem; color: var(--brown-mid); cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif; transition: all 0.15s;
+  }
+  .btn-edit:hover { background: rgba(196,129,43,0.08); }
+  .btn-save {
+    background: var(--green); border: none;
+    border-radius: 6px; padding: 0.3rem 0.7rem;
+    font-size: 0.78rem; color: white; cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif; transition: all 0.15s;
+  }
+
+  /* RECORD CARD */
+  .record-card {
+    background: var(--surface);
+    border: 1px solid rgba(196,129,43,0.15);
+    border-radius: 14px; padding: 1.4rem 1.6rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow);
+  }
+  .record-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1rem; padding-bottom: 0.8rem;
+    border-bottom: 1px dashed rgba(139,99,67,0.2);
+  }
+  .record-date {
+    font-family: 'Kaisei Opti', serif; font-size: 1.05rem;
+    color: var(--brown-deep);
+  }
+  .record-revenue {
+    font-family: 'Noto Serif TC', serif; font-size: 1.2rem;
+    font-weight: 600; color: var(--caramel);
+  }
+  .record-actions { display: flex; gap: 0.5rem; }
+
+  .record-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.6rem; margin-bottom: 1rem;
+  }
+  .record-item { }
+  .record-item-label { font-size: 0.72rem; color: var(--muted); margin-bottom: 0.1rem; }
+  .record-item-value { font-size: 0.9rem; color: var(--ink); font-weight: 500; }
+  .record-item-value.editable {
+    background: rgba(255,255,255,0.8); border: 1px solid rgba(139,99,67,0.2);
+    border-radius: 5px; padding: 0.25rem 0.4rem; width: 100%;
+    font-family: 'Noto Sans TC', sans-serif;
+  }
+
+  .record-photos { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.8rem; }
+  .record-photo {
+    width: 80px; height: 80px; object-fit: cover;
+    border-radius: 8px; border: 1px solid rgba(139,99,67,0.2);
+    cursor: pointer; transition: transform 0.15s;
+  }
+  .record-photo:hover { transform: scale(1.05); }
+  .photo-label { font-size: 0.7rem; color: var(--muted); margin-bottom: 0.3rem; }
+
+  .record-note {
+    font-size: 0.82rem; color: var(--muted);
+    background: rgba(196,129,43,0.05); border-radius: 6px;
+    padding: 0.5rem 0.7rem; margin-top: 0.6rem;
+    border-left: 2px solid var(--caramel-light);
+  }
+
+  /* PURCHASE TABLE */
+  .purchase-table { width: 100%; border-collapse: collapse; margin-top: 0.4rem; }
+  .purchase-table th {
+    font-size: 0.72rem; color: var(--muted); text-align: left;
+    padding: 0.3rem 0.5rem; border-bottom: 1px solid rgba(139,99,67,0.15);
+    font-weight: 500;
+  }
+  .purchase-table td {
+    font-size: 0.84rem; padding: 0.35rem 0.5rem;
+    border-bottom: 1px solid rgba(139,99,67,0.08);
+  }
+
+  /* SUMMARY STATS */
+  .stats-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem;
+  }
+  .stat-box {
+    background: var(--surface); border: 1px solid rgba(196,129,43,0.15);
+    border-radius: 12px; padding: 1rem 1.2rem;
+    text-align: center; box-shadow: var(--shadow);
+  }
+  .stat-label { font-size: 0.72rem; color: var(--muted); margin-bottom: 0.3rem; }
+  .stat-value { font-family: 'Kaisei Opti', serif; font-size: 1.4rem; color: var(--brown-deep); }
+
+  /* LIGHTBOX */
+  .lightbox {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85); z-index: 999;
+    align-items: center; justify-content: center;
+  }
+  .lightbox.show { display: flex; }
+  .lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 8px; }
+  .lightbox-close {
+    position: absolute; top: 1rem; right: 1.5rem;
+    color: white; font-size: 2rem; cursor: pointer; line-height: 1;
+  }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center; padding: 3rem;
+    color: var(--muted); font-size: 0.9rem;
+  }
+  .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 0.8rem; }
+
+  /* LOADING */
+  .loading { text-align: center; padding: 2rem; color: var(--muted); font-size: 0.85rem; }
+
+  /* NEW RECORD FORM (admin) */
+  .new-record-form {
+    border: 1px dashed rgba(196,129,43,0.3); border-radius: 14px;
+    padding: 1.4rem; margin-bottom: 1rem; display: none;
+    background: rgba(250,246,238,0.6);
+  }
+  .new-record-form.show { display: block; }
+
+  @media (max-width: 600px) {
+    .page { padding: 1rem; }
+    .form-grid, .form-grid.cols-3 { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .record-grid { grid-template-columns: 1fr 1fr; }
+    .purchase-row { grid-template-columns: 1fr 1fr 1fr; }
+    .purchase-row .purchase-unit, .purchase-row .purchase-supplier { display: none; }
+    .nav-brand { font-size: 1rem; }
+    .nav-tab { padding: 0 1rem; font-size: 0.78rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-brand">☕ 派西夫咖啡</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchPage('cashier')">店長記帳</button>
+    <button class="nav-tab" onclick="switchPage('admin')">老闆後台</button>
+  </div>
+</nav>
+
+<!-- ============================= -->
+<!-- CASHIER PAGE                  -->
+<!-- ============================= -->
+<div class="page active" id="page-cashier">
+  <div class="page-header">
+    <div class="page-title">今日記帳</div>
+    <div class="page-date" id="cashier-date"></div>
+  </div>
+
+  <!-- 日期 -->
+  <div class="card">
+    <div class="card-title"><span class="icon">📅</span>記帳日期</div>
+    <div class="field">
+      <input type="date" id="record-date">
+    </div>
+  </div>
+
+  <!-- 營收 -->
+  <div class="card">
+    <div class="card-title"><span class="icon">💰</span>今日營收</div>
+    <div class="form-grid cols-3">
+      <div class="field">
+        <label>營收總額（元）</label>
+        <input type="number" id="rev-total" placeholder="0">
+      </div>
+      <div class="field">
+        <label>悠遊卡（元）</label>
+        <input type="number" id="rev-easycard" placeholder="0">
+      </div>
+      <div class="field">
+        <label>悠遊卡筆數</label>
+        <input type="number" id="rev-easycard-count" placeholder="0">
+      </div>
+      <div class="field">
+        <label>街口支付（元）</label>
+        <input type="number" id="rev-jkopay" placeholder="0">
+      </div>
+      <div class="field">
+        <label>街口筆數</label>
+        <input type="number" id="rev-jkopay-count" placeholder="0">
+      </div>
+      <div class="field">
+        <label>FoodPanda（元）</label>
+        <input type="number" id="rev-panda" placeholder="0">
+      </div>
+      <div class="field">
+        <label>現金收入（元）</label>
+        <input type="number" id="rev-cash" placeholder="0">
+      </div>
+      <div class="field">
+        <label>實收現金（元）</label>
+        <input type="number" id="rev-cash-actual" placeholder="0">
+      </div>
+      <div class="field">
+        <label>溢收（元）</label>
+        <input type="number" id="rev-overflow" placeholder="0">
+      </div>
+    </div>
+  </div>
+
+  <!-- 儲值寄杯 -->
+  <div class="card">
+    <div class="card-title"><span class="icon">🏷️</span>儲值 / 寄杯</div>
+    <div class="form-grid cols-3">
+      <div class="field">
+        <label>儲值寄杯使用數</label>
+        <input type="number" id="store-used" placeholder="0">
+      </div>
+      <div class="field">
+        <label>出杯數</label>
+        <input type="number" id="store-cups" placeholder="0">
+      </div>
+      <div class="field">
+        <label>儲值金額</label>
+        <input type="number" id="store-value" placeholder="0">
+      </div>
+      <div class="field">
+        <label>清帳金額</label>
+        <input type="number" id="store-settle" placeholder="0">
+      </div>
+    </div>
+  </div>
+
+  <!-- 存款 -->
+  <div class="card">
+    <div class="card-title"><span class="icon">🏦</span>存款 / 零用金</div>
+    <div class="form-grid">
+      <div class="field">
+        <label>今日存款（元）</label>
+        <input type="number" id="deposit" placeholder="0">
+      </div>
+      <div class="field">
+        <label>支出帳款（元）</label>
+        <input type="number" id="expense" placeholder="0">
+      </div>
+      <div class="field">
+        <label>零用金餘額（元）</label>
+        <input type="number" id="petty-cash" placeholder="0">
+      </div>
+    </div>
+  </div>
+
+  <!-- 進貨 -->
+  <div class="card">
+    <div class="card-title"><span class="icon">📦</span>今日進貨</div>
+    <div id="purchase-list">
+      <!-- rows injected by JS -->
+    </div>
+    <button class="btn-add" onclick="addPurchaseRow()">＋ 新增進貨項目</button>
+  </div>
+
+  <!-- 庫存 -->
+  <div class="card">
+    <div class="card-title"><span class="icon">🗄️</span>庫存記錄</div>
+    <div id="inventory-list"></div>
+    <button class="btn-add" onclick="addInventoryRow()">＋ 新增庫存項目</button>
+  </div>
+
+  <!-- 備註 -->
+  <div class="card">
+    <div class="card-title"><span class="icon">📝</span>備註</div>
+    <div class="field">
+      <textarea id="notes" placeholder="今日特殊狀況、備忘事項…"></textarea>
+    </div>
+  </div>
+
+  <button class="btn-submit" id="submit-btn" onclick="submitRecord()">儲存今日帳目</button>
+  <div class="status-msg" id="submit-status"></div>
+</div>
+
+<!-- ============================= -->
+<!-- ADMIN PAGE                    -->
+<!-- ============================= -->
+<div class="page" id="page-admin">
+  <div class="page-header">
+    <div class="page-title">帳務後台</div>
+    <div class="page-date" id="admin-date"></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row" id="stats-row">
+    <div class="stat-box">
+      <div class="stat-label">本月總營收</div>
+      <div class="stat-value" id="stat-revenue">—</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">本月總存款</div>
+      <div class="stat-value" id="stat-deposit">—</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">本月總支出</div>
+      <div class="stat-value" id="stat-expense">—</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">記帳天數</div>
+      <div class="stat-value" id="stat-days">—</div>
+    </div>
+  </div>
+
+  <div class="admin-toolbar">
+    <input type="month" id="filter-month" onchange="filterByMonth()">
+    <button class="btn-secondary" onclick="clearFilter()">顯示全部</button>
+    <button class="btn-secondary" style="margin-left:auto" onclick="toggleNewForm()">＋ 手動新增</button>
+  </div>
+
+  <!-- New record form (admin) -->
+  <div class="new-record-form card" id="new-record-form">
+    <div class="card-title">手動新增記錄</div>
+    <div class="form-grid cols-3">
+      <div class="field"><label>日期</label><input type="date" id="new-date"></div>
+      <div class="field"><label>營收總額</label><input type="number" id="new-rev-total" placeholder="0"></div>
+      <div class="field"><label>悠遊卡</label><input type="number" id="new-easycard" placeholder="0"></div>
+      <div class="field"><label>街口</label><input type="number" id="new-jkopay" placeholder="0"></div>
+      <div class="field"><label>FoodPanda</label><input type="number" id="new-panda" placeholder="0"></div>
+      <div class="field"><label>現金收入</label><input type="number" id="new-cash" placeholder="0"></div>
+      <div class="field"><label>存款</label><input type="number" id="new-deposit" placeholder="0"></div>
+      <div class="field"><label>支出</label><input type="number" id="new-expense" placeholder="0"></div>
+      <div class="field"><label>零用金餘額</label><input type="number" id="new-petty" placeholder="0"></div>
+    </div>
+    <div class="field" style="margin-top:0.8rem">
+      <label>備註</label>
+      <textarea id="new-notes" style="min-height:56px"></textarea>
+    </div>
+    <div style="display:flex;gap:0.5rem;margin-top:1rem">
+      <button class="btn-submit" style="width:auto;padding:0.7rem 2rem" onclick="adminAddRecord()">新增</button>
+      <button class="btn-secondary" onclick="toggleNewForm()">取消</button>
+    </div>
+    <div class="status-msg" id="new-record-status"></div>
+  </div>
+
+  <!-- Records list -->
+  <div id="records-container">
+    <div class="loading">載入中…</div>
+  </div>
+</div>
+
+<script>
+// =================== PAGE SWITCH ===================
+function switchPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'admin') loadRecords();
+}
+
+// =================== DATES ===================
+function todayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+function formatDate(str) {
+  if (!str) return '';
+  const d = new Date(str + 'T00:00:00');
+  return `${d.getFullYear()} 年 ${d.getMonth()+1} 月 ${d.getDate()} 日`;
+}
+document.getElementById('cashier-date').textContent = formatDate(todayStr());
+document.getElementById('admin-date').textContent = new Date().toLocaleDateString('zh-TW', {year:'numeric',month:'long'});
+document.getElementById('record-date').value = todayStr();
+document.getElementById('new-date').value = todayStr();
+
+// =================== PURCHASE ROWS ===================
+let purchaseCount = 0;
+function addPurchaseRow(data={}) {
+  purchaseCount++;
+  const id = purchaseCount;
+  const list = document.getElementById('purchase-list');
+  const row = document.createElement('div');
+  row.className = 'purchase-row';
+  row.id = 'pur-' + id;
+  row.innerHTML = `
+    <div class="field"><label>品項</label><input type="text" id="pur-item-${id}" value="${data.item||''}" placeholder="品項名稱"></div>
+    <div class="field"><label>單價</label><input type="number" id="pur-price-${id}" value="${data.price||''}" placeholder="0"></div>
+    <div class="field"><label>數量</label><input type="number" id="pur-qty-${id}" value="${data.qty||''}" placeholder="0"></div>
+    <div class="field purchase-unit"><label>金額</label><input type="number" id="pur-amt-${id}" value="${data.amount||''}" placeholder="0"></div>
+    <div class="field purchase-supplier"><label>廠商</label><input type="text" id="pur-sup-${id}" value="${data.supplier||''}" placeholder="廠商"></div>
+    <button class="btn-icon" onclick="removePurchaseRow(${id})">✕</button>
+  `;
+  list.appendChild(row);
+}
+function removePurchaseRow(id) {
+  document.getElementById('pur-' + id)?.remove();
+}
+function getPurchaseData() {
+  const rows = document.querySelectorAll('[id^="pur-"]');
+  return Array.from(rows).map(r => {
+    const id = r.id.replace('pur-','');
+    return {
+      item: document.getElementById('pur-item-'+id)?.value || '',
+      price: document.getElementById('pur-price-'+id)?.value || '',
+      qty: document.getElementById('pur-qty-'+id)?.value || '',
+      amount: document.getElementById('pur-amt-'+id)?.value || '',
+      supplier: document.getElementById('pur-sup-'+id)?.value || '',
+    };
+  }).filter(r => r.item);
+}
+
+// =================== INVENTORY ROWS ===================
+let inventoryCount = 0;
+function addInventoryRow(data={}) {
+  inventoryCount++;
+  const id = inventoryCount;
+  const list = document.getElementById('inventory-list');
+  const row = document.createElement('div');
+  row.className = 'purchase-row';
+  row.id = 'inv-' + id;
+  row.innerHTML = `
+    <div class="field"><label>類別</label><input type="text" id="inv-cat-${id}" value="${data.category||''}" placeholder="飲品/食材…"></div>
+    <div class="field"><label>品項</label><input type="text" id="inv-item-${id}" value="${data.item||''}" placeholder="品項"></div>
+    <div class="field"><label>數量</label><input type="text" id="inv-qty-${id}" value="${data.qty||''}" placeholder="數量"></div>
+    <div class="field purchase-unit"><label>單位</label><input type="text" id="inv-unit-${id}" value="${data.unit||''}" placeholder="瓶/磅…"></div>
+    <div class="field purchase-supplier"><label>備註</label><input type="text" id="inv-note-${id}" value="${data.note||''}" placeholder="備註"></div>
+    <button class="btn-icon" onclick="removeInventoryRow(${id})">✕</button>
+  `;
+  list.appendChild(row);
+}
+function removeInventoryRow(id) { document.getElementById('inv-' + id)?.remove(); }
+function getInventoryData() {
+  const rows = document.querySelectorAll('[id^="inv-"]');
+  return Array.from(rows).map(r => {
+    const id = r.id.replace('inv-','');
+    return {
+      category: document.getElementById('inv-cat-'+id)?.value || '',
+      item: document.getElementById('inv-item-'+id)?.value || '',
+      qty: document.getElementById('inv-qty-'+id)?.value || '',
+      unit: document.getElementById('inv-unit-'+id)?.value || '',
+      note: document.getElementById('inv-note-'+id)?.value || '',
+    };
+  }).filter(r => r.item);
+}
+
+// Init default rows
+addPurchaseRow();
+addInventoryRow();
+
+// =================== SUBMIT ===================
+async function submitRecord() {
+  const btn = document.getElementById('submit-btn');
+  const status = document.getElementById('submit-status');
+  const fb = window._firebase;
+
+  if (!fb) {
+    showStatus(status, '⚠️ Firebase 尚未設定，請先填入 firebaseConfig', 'error');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '儲存中…';
+
+  try {
+    const date = document.getElementById('record-date').value;
+
+    const data = {
+      date,
+      revenue: {
+        total: num('rev-total'),
+        easycard: num('rev-easycard'),
+        easycardCount: num('rev-easycard-count'),
+        jkopay: num('rev-jkopay'),
+        jkopayCount: num('rev-jkopay-count'),
+        panda: num('rev-panda'),
+        cash: num('rev-cash'),
+        cashActual: num('rev-cash-actual'),
+        overflow: num('rev-overflow'),
+      },
+      store: {
+        used: num('store-used'),
+        cups: num('store-cups'),
+        value: num('store-value'),
+        settle: num('store-settle'),
+      },
+      finance: {
+        deposit: num('deposit'),
+        expense: num('expense'),
+        pettyCash: num('petty-cash'),
+      },
+      purchases: getPurchaseData(),
+      inventory: getInventoryData(),
+      notes: document.getElementById('notes').value,
+      createdAt: new Date().toISOString(),
+    };
+
+    await fb.addDoc(fb.collection(fb.db, 'records'), data);
+    showStatus(status, '✅ 今日帳目已儲存！', 'success');
+    btn.textContent = '✅ 已儲存';
+  } catch (e) {
+    showStatus(status, '❌ 儲存失敗：' + e.message, 'error');
+    btn.disabled = false;
+    btn.textContent = '儲存今日帳目';
+  }
+}
+
+function num(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
+function val(id) { return document.getElementById(id)?.value || ''; }
+
+function showStatus(el, msg, type) {
+  el.textContent = msg;
+  el.className = 'status-msg ' + type;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 5000);
+}
+
+// =================== ADMIN LOAD ===================
+let allRecords = [];
+let editingId = null;
+
+async function loadRecords() {
+  const fb = window._firebase;
+  const container = document.getElementById('records-container');
+  if (!fb) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">⚙️</div><p>請先設定 Firebase 設定</p></div>';
+    return;
+  }
+  container.innerHTML = '<div class="loading">載入中…</div>';
+
+  try {
+    const q = fb.query(fb.collection(fb.db, 'records'), fb.orderBy('date', 'desc'));
+    fb.onSnapshot(q, snap => {
+      allRecords = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderRecords(allRecords);
+      updateStats(allRecords);
+    });
+  } catch(e) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">❌</div><p>${e.message}</p></div>`;
+  }
+}
+
+function filterByMonth() {
+  const month = document.getElementById('filter-month').value;
+  if (!month) { renderRecords(allRecords); return; }
+  const filtered = allRecords.filter(r => r.date && r.date.startsWith(month));
+  renderRecords(filtered);
+  updateStats(filtered);
+}
+function clearFilter() {
+  document.getElementById('filter-month').value = '';
+  renderRecords(allRecords);
+  updateStats(allRecords);
+}
+
+function updateStats(records) {
+  const rev = records.reduce((s,r) => s + (r.revenue?.total||0), 0);
+  const dep = records.reduce((s,r) => s + (r.finance?.deposit||0), 0);
+  const exp = records.reduce((s,r) => s + (r.finance?.expense||0), 0);
+  document.getElementById('stat-revenue').textContent = '$' + rev.toLocaleString();
+  document.getElementById('stat-deposit').textContent = '$' + dep.toLocaleString();
+  document.getElementById('stat-expense').textContent = '$' + exp.toLocaleString();
+  document.getElementById('stat-days').textContent = records.length + ' 天';
+}
+
+function renderRecords(records) {
+  const container = document.getElementById('records-container');
+  if (!records.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>尚無記帳資料</p></div>';
+    return;
+  }
+  container.innerHTML = records.map(r => renderRecord(r)).join('');
+}
+
+function renderRecord(r) {
+  const isEditing = editingId === r.id;
+  const rev = r.revenue || {};
+  const fin = r.finance || {};
+  const store = r.store || {};
+
+  const field = (label, value, field) => isEditing
+    ? `<div class="record-item"><div class="record-item-label">${label}</div><input class="record-item-value editable" data-field="${field}" value="${value||0}" type="number"></div>`
+    : `<div class="record-item"><div class="record-item-label">${label}</div><div class="record-item-value">${value ? '$' + Number(value).toLocaleString() : '—'}</div></div>`;
+
+  const purchaseTable = r.purchases?.length ? `
+    <div style="margin-top:0.8rem">
+      <div class="photo-label">📦 進貨記錄</div>
+      <table class="purchase-table">
+        <tr><th>品項</th><th>單價</th><th>數量</th><th>金額</th><th>廠商</th></tr>
+        ${r.purchases.map(p => `<tr><td>${p.item}</td><td>${p.price||'—'}</td><td>${p.qty||'—'}</td><td>${p.amount ? '$'+p.amount : '—'}</td><td>${p.supplier||'—'}</td></tr>`).join('')}
+      </table>
+    </div>` : '';
+
+  const inventoryTable = r.inventory?.length ? `
+    <div style="margin-top:0.8rem">
+      <div class="photo-label">🗄️ 庫存</div>
+      <table class="purchase-table">
+        <tr><th>類別</th><th>品項</th><th>數量</th><th>單位</th></tr>
+        ${r.inventory.map(i => `<tr><td>${i.category||'—'}</td><td>${i.item}</td><td>${i.qty||'—'}</td><td>${i.unit||'—'}</td></tr>`).join('')}
+      </table>
+    </div>` : '';
+
+  const noteHtml = r.notes ? `<div class="record-note">📝 ${r.notes}</div>` : '';
+
+  const actionsHtml = isEditing
+    ? `<div class="record-actions">
+        <button class="btn-save" onclick="saveRecord('${r.id}')">儲存</button>
+        <button class="btn-edit" onclick="cancelEdit()">取消</button>
+       </div>`
+    : `<div class="record-actions">
+        <button class="btn-edit" onclick="startEdit('${r.id}')">編輯</button>
+        <button class="btn-danger" onclick="deleteRecord('${r.id}', '${r.date}')">刪除</button>
+       </div>`;
+
+  return `
+  <div class="record-card" id="card-${r.id}">
+    <div class="record-header">
+      <div class="record-date">${formatDate(r.date)}</div>
+      <div style="display:flex;align-items:center;gap:1rem">
+        <div class="record-revenue">$${(rev.total||0).toLocaleString()}</div>
+        ${actionsHtml}
+      </div>
+    </div>
+    <div class="record-grid">
+      ${field('悠遊卡', rev.easycard, 'revenue.easycard')}
+      ${field('街口支付', rev.jkopay, 'revenue.jkopay')}
+      ${field('FoodPanda', rev.panda, 'revenue.panda')}
+      ${field('現金收入', rev.cash, 'revenue.cash')}
+      ${field('實收現金', rev.cashActual, 'revenue.cashActual')}
+      ${field('存款', fin.deposit, 'finance.deposit')}
+      ${field('支出帳款', fin.expense, 'finance.expense')}
+      ${field('零用金餘額', fin.pettyCash, 'finance.pettyCash')}
+    </div>
+    ${purchaseTable}
+    ${inventoryTable}
+    ${noteHtml}
+  </div>`;
+}
+
+function startEdit(id) { editingId = id; renderRecords(allRecords); }
+function cancelEdit() { editingId = null; renderRecords(allRecords); }
+
+async function saveRecord(id) {
+  const fb = window._firebase;
+  const card = document.getElementById('card-' + id);
+  const inputs = card.querySelectorAll('.editable');
+  const updates = {};
+  inputs.forEach(input => {
+    const path = input.dataset.field.split('.');
+    if (path.length === 2) {
+      if (!updates[path[0]]) updates[path[0]] = {};
+      updates[path[0]][path[1]] = parseFloat(input.value) || 0;
+    }
+  });
+  try {
+    await fb.updateDoc(fb.doc(fb.db, 'records', id), updates);
+    editingId = null;
+  } catch(e) { alert('儲存失敗：' + e.message); }
+}
+
+async function deleteRecord(id, date) {
+  if (!confirm(`確定要刪除 ${formatDate(date)} 的記錄嗎？`)) return;
+  const fb = window._firebase;
+  try {
+    await fb.deleteDoc(fb.doc(fb.db, 'records', id));
+  } catch(e) { alert('刪除失敗：' + e.message); }
+}
+
+// Admin add
+function toggleNewForm() {
+  const f = document.getElementById('new-record-form');
+  f.classList.toggle('show');
+}
+async function adminAddRecord() {
+  const fb = window._firebase;
+  const status = document.getElementById('new-record-status');
+  try {
+    const data = {
+      date: document.getElementById('new-date').value,
+      revenue: {
+        total: parseFloat(document.getElementById('new-rev-total').value)||0,
+        easycard: parseFloat(document.getElementById('new-easycard').value)||0,
+        jkopay: parseFloat(document.getElementById('new-jkopay').value)||0,
+        panda: parseFloat(document.getElementById('new-panda').value)||0,
+        cash: parseFloat(document.getElementById('new-cash').value)||0,
+      },
+      finance: {
+        deposit: parseFloat(document.getElementById('new-deposit').value)||0,
+        expense: parseFloat(document.getElementById('new-expense').value)||0,
+        pettyCash: parseFloat(document.getElementById('new-petty').value)||0,
+      },
+      notes: document.getElementById('new-notes').value,
+      purchases: [], inventory: [],
+      createdAt: new Date().toISOString(),
+    };
+    await fb.addDoc(fb.collection(fb.db, 'records'), data);
+    showStatus(status, '✅ 新增成功', 'success');
+    toggleNewForm();
+  } catch(e) { showStatus(status, '❌ ' + e.message, 'error'); }
+}
+</script>
+</body>
+</html>
