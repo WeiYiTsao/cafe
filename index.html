@@ -12,9 +12,6 @@
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
   import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-  // =============================================
-  // 🔧 請貼上你的 Firebase 設定（從 Firebase Console 複製）
-  // =============================================
   const firebaseConfig = {
     apiKey: "AIzaSyDVC7q--cmOo3UxteYvvZaLauI53ccGPhQ",
     authDomain: "passive-cafe.firebaseapp.com",
@@ -24,7 +21,6 @@
     appId: "1:822955816181:web:ab1ce0f591941d386fc1bc",
     measurementId: "G-WSZ6JS2VYP"
   };
-  // =============================================
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
@@ -34,91 +30,94 @@
 
 <style>
   :root {
-    --cream: #F5EFE0;
-    --cream-dark: #EDE3CC;
-    --brown-deep: #2C1A0E;
-    --brown-mid: #5C3D1E;
-    --brown-light: #8B6343;
-    --caramel: #C4812B;
-    --caramel-light: #E6A84A;
-    --milk: #FAF6EE;
-    --ink: #1A1208;
-    --muted: #9B8570;
-    --red: #C0392B;
-    --green: #27795A;
-    --surface: rgba(255,255,255,0.6);
-    --shadow: 0 4px 24px rgba(44,26,14,0.10);
+    --orange:      #F47920;
+    --orange-dark: #D4641A;
+    --orange-soft: rgba(244,121,32,0.10);
+    --white:       #FFFFFF;
+    --off-white:   #F8F6F3;
+    --light-gray:  #F0EDEA;
+    --border:      rgba(0,0,0,0.10);
+    --border-soft: rgba(0,0,0,0.06);
+    --ink:         #1A1410;
+    --ink-mid:     #4A3F35;
+    --muted:       #9A8F85;
+    --red:         #C0392B;
+    --green:       #27795A;
+    --surface:     rgba(255,255,255,0.85);
+    --shadow:      0 2px 16px rgba(0,0,0,0.08);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    background: var(--cream);
+    background: var(--off-white);
     font-family: 'Noto Sans TC', sans-serif;
     color: var(--ink);
     min-height: 100vh;
   }
 
-  body::before {
-    content: '';
-    position: fixed; inset: 0;
-    background:
-      radial-gradient(ellipse 80% 50% at 20% 10%, rgba(196,129,43,0.08) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(92,61,30,0.06) 0%, transparent 60%);
-    pointer-events: none; z-index: 0;
-  }
-
   /* NAV */
   .nav {
     position: sticky; top: 0; z-index: 100;
-    background: var(--brown-deep);
+    background: var(--white);
+    border-bottom: 3px solid var(--orange);
     padding: 0 2rem;
     display: flex; align-items: center; justify-content: space-between;
-    height: 56px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    height: 62px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
   }
-  .nav-brand {
-    font-family: 'Kaisei Opti', serif;
-    font-size: 1.15rem; color: var(--caramel-light);
-    letter-spacing: 0.08em;
+  .nav-logo a {
+    text-decoration: none;
+    display: flex; flex-direction: column; line-height: 1;
+  }
+  .nav-logo-zh {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 700; font-size: 1.15rem;
+    color: var(--ink); letter-spacing: 0.05em;
+  }
+  .nav-logo-en {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 300; font-size: 0.62rem;
+    color: var(--orange); letter-spacing: 0.18em;
+    margin-top: 1px;
   }
   .nav-tabs { display: flex; gap: 0; }
   .nav-tab {
-    padding: 0 1.5rem; height: 56px;
+    padding: 0 1.5rem; height: 62px;
     display: flex; align-items: center;
     font-size: 0.85rem; font-weight: 500;
     color: var(--muted); cursor: pointer;
     border-bottom: 3px solid transparent;
+    margin-bottom: -3px;
     transition: all 0.2s; letter-spacing: 0.05em;
     background: none; border-top: none; border-left: none; border-right: none;
+    font-family: 'Noto Sans TC', sans-serif;
   }
-  .nav-tab:hover { color: var(--cream); }
-  .nav-tab.active { color: var(--caramel-light); border-bottom-color: var(--caramel); }
+  .nav-tab:hover { color: var(--orange); }
+  .nav-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
 
   /* PAGES */
-  .page { display: none; padding: 2rem; max-width: 860px; margin: 0 auto; position: relative; z-index: 1; }
+  .page { display: none; padding: 2rem; max-width: 880px; margin: 0 auto; position: relative; z-index: 1; }
   .page.active { display: block; }
 
   /* CARD */
   .card {
-    background: var(--surface);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(196,129,43,0.15);
-    border-radius: 16px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
     padding: 1.8rem 2rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.4rem;
     box-shadow: var(--shadow);
   }
   .card-title {
     font-family: 'Noto Serif TC', serif;
     font-size: 0.95rem; font-weight: 600;
-    color: var(--brown-mid);
+    color: var(--ink-mid);
     margin-bottom: 1.2rem;
     padding-bottom: 0.7rem;
-    border-bottom: 1px dashed rgba(139,99,67,0.25);
+    border-bottom: 1px solid var(--border-soft);
     display: flex; align-items: center; gap: 0.5rem;
   }
-  .card-title .icon { font-size: 1rem; }
 
   /* PAGE HEADER */
   .page-header {
@@ -127,27 +126,21 @@
   }
   .page-title {
     font-family: 'Kaisei Opti', serif;
-    font-size: 1.6rem; color: var(--brown-deep);
+    font-size: 1.6rem; color: var(--ink);
     letter-spacing: 0.02em;
   }
-  .page-date {
-    font-size: 0.85rem; color: var(--muted);
-    font-family: 'Noto Serif TC', serif;
-  }
+  .page-date { font-size: 0.85rem; color: var(--muted); }
 
   /* FORM */
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
   .form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
   .form-full { grid-column: 1 / -1; }
-  
+
   .field { display: flex; flex-direction: column; gap: 0.35rem; }
-  .field label {
-    font-size: 0.78rem; font-weight: 500;
-    color: var(--brown-light); letter-spacing: 0.04em;
-  }
+  .field label { font-size: 0.78rem; font-weight: 500; color: var(--muted); letter-spacing: 0.04em; }
   .field input, .field textarea, .field select {
-    background: rgba(255,255,255,0.75);
-    border: 1px solid rgba(139,99,67,0.25);
+    background: var(--white);
+    border: 1px solid var(--border);
     border-radius: 8px;
     padding: 0.6rem 0.8rem;
     font-size: 0.9rem; font-family: 'Noto Sans TC', sans-serif;
@@ -157,37 +150,12 @@
   }
   .field input:focus, .field textarea:focus {
     outline: none;
-    border-color: var(--caramel);
-    box-shadow: 0 0 0 3px rgba(196,129,43,0.12);
+    border-color: var(--orange);
+    box-shadow: 0 0 0 3px rgba(244,121,32,0.10);
   }
   .field textarea { resize: vertical; min-height: 72px; }
 
-  /* UPLOAD ZONE */
-  .upload-zone {
-    border: 2px dashed rgba(139,99,67,0.3);
-    border-radius: 10px;
-    padding: 1.2rem;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    background: rgba(255,255,255,0.4);
-    position: relative;
-  }
-  .upload-zone:hover { border-color: var(--caramel); background: rgba(196,129,43,0.04); }
-  .upload-zone input[type="file"] {
-    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
-  }
-  .upload-zone .upload-icon { font-size: 1.6rem; margin-bottom: 0.3rem; }
-  .upload-zone .upload-label { font-size: 0.8rem; color: var(--muted); }
-  .upload-preview {
-    display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.8rem;
-  }
-  .upload-preview img {
-    width: 72px; height: 72px; object-fit: cover;
-    border-radius: 6px; border: 1px solid rgba(139,99,67,0.2);
-  }
-
-  /* DIVIDER ROW */
+  /* PURCHASE ROW */
   .purchase-row {
     display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1.5fr auto;
     gap: 0.5rem; align-items: end; margin-bottom: 0.6rem;
@@ -199,20 +167,20 @@
     border-radius: 6px; transition: all 0.15s; line-height: 1;
     height: 36px; display: flex; align-items: center;
   }
-  .btn-icon:hover { background: rgba(192,57,43,0.1); color: var(--red); }
+  .btn-icon:hover { background: rgba(192,57,43,0.08); color: var(--red); }
   .btn-add {
-    background: none; border: 1px dashed rgba(139,99,67,0.35);
+    background: none; border: 1px dashed rgba(0,0,0,0.15);
     border-radius: 8px; padding: 0.5rem 1rem;
-    font-size: 0.8rem; color: var(--brown-light); cursor: pointer;
+    font-size: 0.8rem; color: var(--muted); cursor: pointer;
     width: 100%; margin-top: 0.3rem;
     transition: all 0.15s; font-family: 'Noto Sans TC', sans-serif;
   }
-  .btn-add:hover { background: rgba(196,129,43,0.06); border-color: var(--caramel); }
+  .btn-add:hover { border-color: var(--orange); color: var(--orange); background: var(--orange-soft); }
 
-  /* SUBMIT BUTTON */
+  /* SUBMIT */
   .btn-submit {
-    background: var(--brown-deep);
-    color: var(--caramel-light);
+    background: var(--orange);
+    color: var(--white);
     border: none; border-radius: 10px;
     padding: 0.9rem 2.5rem;
     font-size: 0.95rem; font-family: 'Noto Serif TC', serif;
@@ -220,50 +188,51 @@
     cursor: pointer; transition: all 0.2s;
     width: 100%; margin-top: 0.5rem;
   }
-  .btn-submit:hover { background: var(--brown-mid); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(44,26,14,0.2); }
+  .btn-submit:hover { background: var(--orange-dark); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(244,121,32,0.3); }
   .btn-submit:active { transform: translateY(0); }
   .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-  /* STATUS MESSAGE */
+  /* STATUS */
   .status-msg {
     padding: 0.8rem 1rem; border-radius: 8px;
-    font-size: 0.85rem; margin-top: 0.8rem;
-    display: none;
+    font-size: 0.85rem; margin-top: 0.8rem; display: none;
   }
-  .status-msg.success { background: rgba(39,121,90,0.1); color: var(--green); border: 1px solid rgba(39,121,90,0.2); }
-  .status-msg.error { background: rgba(192,57,43,0.1); color: var(--red); border: 1px solid rgba(192,57,43,0.2); }
+  .status-msg.success { background: rgba(39,121,90,0.08); color: var(--green); border: 1px solid rgba(39,121,90,0.2); }
+  .status-msg.error   { background: rgba(192,57,43,0.08); color: var(--red); border: 1px solid rgba(192,57,43,0.2); }
 
-  /* ===== ADMIN PAGE ===== */
+  /* ADMIN TOOLBAR */
   .admin-toolbar {
     display: flex; gap: 0.8rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap;
   }
-  .admin-toolbar input[type="date"], .admin-toolbar input[type="month"] {
-    background: var(--surface); border: 1px solid rgba(139,99,67,0.25);
+  .admin-toolbar input[type="date"],
+  .admin-toolbar input[type="month"] {
+    background: var(--white); border: 1px solid var(--border);
     border-radius: 8px; padding: 0.55rem 0.8rem;
     font-size: 0.85rem; font-family: 'Noto Sans TC', sans-serif;
     color: var(--ink); cursor: pointer;
   }
   .btn-secondary {
-    background: var(--surface); border: 1px solid rgba(139,99,67,0.3);
+    background: var(--white); border: 1px solid var(--border);
     border-radius: 8px; padding: 0.55rem 1rem;
-    font-size: 0.82rem; color: var(--brown-mid); cursor: pointer;
+    font-size: 0.82rem; color: var(--ink-mid); cursor: pointer;
     font-family: 'Noto Sans TC', sans-serif; transition: all 0.15s;
+    white-space: nowrap;
   }
-  .btn-secondary:hover { background: var(--cream-dark); }
+  .btn-secondary:hover { border-color: var(--orange); color: var(--orange); }
   .btn-danger {
-    background: none; border: 1px solid rgba(192,57,43,0.3);
+    background: none; border: 1px solid rgba(192,57,43,0.25);
     border-radius: 6px; padding: 0.3rem 0.7rem;
     font-size: 0.78rem; color: var(--red); cursor: pointer;
     font-family: 'Noto Sans TC', sans-serif; transition: all 0.15s;
   }
-  .btn-danger:hover { background: rgba(192,57,43,0.08); }
+  .btn-danger:hover { background: rgba(192,57,43,0.06); }
   .btn-edit {
-    background: none; border: 1px solid rgba(139,99,67,0.3);
+    background: none; border: 1px solid var(--border);
     border-radius: 6px; padding: 0.3rem 0.7rem;
-    font-size: 0.78rem; color: var(--brown-mid); cursor: pointer;
+    font-size: 0.78rem; color: var(--ink-mid); cursor: pointer;
     font-family: 'Noto Sans TC', sans-serif; transition: all 0.15s;
   }
-  .btn-edit:hover { background: rgba(196,129,43,0.08); }
+  .btn-edit:hover { border-color: var(--orange); color: var(--orange); }
   .btn-save {
     background: var(--green); border: none;
     border-radius: 6px; padding: 0.3rem 0.7rem;
@@ -271,112 +240,79 @@
     font-family: 'Noto Sans TC', sans-serif; transition: all 0.15s;
   }
 
-  /* RECORD CARD */
-  .record-card {
-    background: var(--surface);
-    border: 1px solid rgba(196,129,43,0.15);
-    border-radius: 14px; padding: 1.4rem 1.6rem;
-    margin-bottom: 1rem;
-    box-shadow: var(--shadow);
-  }
-  .record-header {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 1rem; padding-bottom: 0.8rem;
-    border-bottom: 1px dashed rgba(139,99,67,0.2);
-  }
-  .record-date {
-    font-family: 'Kaisei Opti', serif; font-size: 1.05rem;
-    color: var(--brown-deep);
-  }
-  .record-revenue {
-    font-family: 'Noto Serif TC', serif; font-size: 1.2rem;
-    font-weight: 600; color: var(--caramel);
-  }
-  .record-actions { display: flex; gap: 0.5rem; }
-
-  .record-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 0.6rem; margin-bottom: 1rem;
-  }
-  .record-item { }
-  .record-item-label { font-size: 0.72rem; color: var(--muted); margin-bottom: 0.1rem; }
-  .record-item-value { font-size: 0.9rem; color: var(--ink); font-weight: 500; }
-  .record-item-value.editable {
-    background: rgba(255,255,255,0.8); border: 1px solid rgba(139,99,67,0.2);
-    border-radius: 5px; padding: 0.25rem 0.4rem; width: 100%;
-    font-family: 'Noto Sans TC', sans-serif;
-  }
-
-  .record-photos { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.8rem; }
-  .record-photo {
-    width: 80px; height: 80px; object-fit: cover;
-    border-radius: 8px; border: 1px solid rgba(139,99,67,0.2);
-    cursor: pointer; transition: transform 0.15s;
-  }
-  .record-photo:hover { transform: scale(1.05); }
-  .photo-label { font-size: 0.7rem; color: var(--muted); margin-bottom: 0.3rem; }
-
-  .record-note {
-    font-size: 0.82rem; color: var(--muted);
-    background: rgba(196,129,43,0.05); border-radius: 6px;
-    padding: 0.5rem 0.7rem; margin-top: 0.6rem;
-    border-left: 2px solid var(--caramel-light);
-  }
-
-  /* PURCHASE TABLE */
-  .purchase-table { width: 100%; border-collapse: collapse; margin-top: 0.4rem; }
-  .purchase-table th {
-    font-size: 0.72rem; color: var(--muted); text-align: left;
-    padding: 0.3rem 0.5rem; border-bottom: 1px solid rgba(139,99,67,0.15);
-    font-weight: 500;
-  }
-  .purchase-table td {
-    font-size: 0.84rem; padding: 0.35rem 0.5rem;
-    border-bottom: 1px solid rgba(139,99,67,0.08);
-  }
-
-  /* SUMMARY STATS */
+  /* STATS */
   .stats-row {
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem;
   }
   .stat-box {
-    background: var(--surface); border: 1px solid rgba(196,129,43,0.15);
+    background: var(--white); border: 1px solid var(--border);
     border-radius: 12px; padding: 1rem 1.2rem;
     text-align: center; box-shadow: var(--shadow);
   }
   .stat-label { font-size: 0.72rem; color: var(--muted); margin-bottom: 0.3rem; }
-  .stat-value { font-family: 'Kaisei Opti', serif; font-size: 1.4rem; color: var(--brown-deep); }
+  .stat-value { font-family: 'Kaisei Opti', serif; font-size: 1.4rem; color: var(--orange); }
 
-  /* LIGHTBOX */
-  .lightbox {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.85); z-index: 999;
-    align-items: center; justify-content: center;
+  /* RECORD CARD */
+  .record-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.4rem 1.6rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow);
+    transition: box-shadow 0.2s;
   }
-  .lightbox.show { display: flex; }
-  .lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 8px; }
-  .lightbox-close {
-    position: absolute; top: 1rem; right: 1.5rem;
-    color: white; font-size: 2rem; cursor: pointer; line-height: 1;
+  .record-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.10); }
+  .record-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1rem; padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .record-date { font-family: 'Kaisei Opti', serif; font-size: 1.05rem; color: var(--ink); }
+  .record-revenue { font-family: 'Noto Serif TC', serif; font-size: 1.2rem; font-weight: 600; color: var(--orange); }
+  .record-actions { display: flex; gap: 0.5rem; }
+  .record-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 0.6rem; margin-bottom: 0.5rem;
+  }
+  .record-item-label { font-size: 0.72rem; color: var(--muted); margin-bottom: 0.1rem; }
+  .record-item-value { font-size: 0.9rem; color: var(--ink); font-weight: 500; }
+
+  .photo-label { font-size: 0.7rem; color: var(--muted); margin-bottom: 0.3rem; }
+  .record-note {
+    font-size: 0.82rem; color: var(--muted);
+    background: var(--orange-soft); border-radius: 6px;
+    padding: 0.5rem 0.7rem; margin-top: 0.6rem;
+    border-left: 2px solid var(--orange);
   }
 
-  /* EMPTY STATE */
-  .empty-state {
-    text-align: center; padding: 3rem;
-    color: var(--muted); font-size: 0.9rem;
+  /* TABLE */
+  .purchase-table { width: 100%; border-collapse: collapse; margin-top: 0.4rem; }
+  .purchase-table th {
+    font-size: 0.72rem; color: var(--muted); text-align: left;
+    padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--border); font-weight: 500;
   }
+  .purchase-table td {
+    font-size: 0.84rem; padding: 0.35rem 0.5rem;
+    border-bottom: 1px solid var(--border-soft);
+  }
+
+  /* EMPTY / LOADING */
+  .empty-state { text-align: center; padding: 3rem; color: var(--muted); font-size: 0.9rem; }
   .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 0.8rem; }
-
-  /* LOADING */
   .loading { text-align: center; padding: 2rem; color: var(--muted); font-size: 0.85rem; }
 
-  /* NEW RECORD FORM (admin) */
+  /* NEW RECORD FORM */
   .new-record-form {
-    border: 1px dashed rgba(196,129,43,0.3); border-radius: 14px;
+    border: 1px dashed rgba(0,0,0,0.15); border-radius: 12px;
     padding: 1.4rem; margin-bottom: 1rem; display: none;
-    background: rgba(250,246,238,0.6);
+    background: var(--light-gray);
   }
   .new-record-form.show { display: block; }
+
+  .edit-section-label {
+    font-size: 0.72rem; font-weight: 500; color: var(--muted);
+    margin-bottom: 0.8rem; letter-spacing: 0.06em;
+  }
 
   @media (max-width: 600px) {
     .page { padding: 1rem; }
@@ -385,7 +321,7 @@
     .record-grid { grid-template-columns: 1fr 1fr; }
     .purchase-row { grid-template-columns: 1fr 1fr 1fr; }
     .purchase-row .purchase-unit, .purchase-row .purchase-supplier { display: none; }
-    .nav-brand { font-size: 1rem; }
+    .nav-logo img { height: 30px; }
     .nav-tab { padding: 0 1rem; font-size: 0.78rem; }
   }
 </style>
@@ -394,7 +330,12 @@
 
 <!-- NAV -->
 <nav class="nav">
-  <div class="nav-brand">☕ 派西夫咖啡</div>
+  <div class="nav-logo">
+    <a href="https://passive.iqrator.com" target="_blank">
+      <div class="nav-logo-zh">派西夫</div>
+      <div class="nav-logo-en">passive cafe</div>
+    </a>
+  </div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="switchPage('cashier')">店長記帳</button>
     <button class="nav-tab" onclick="promptPassword()">營運後台</button>
@@ -402,17 +343,20 @@
 </nav>
 
 <!-- PASSWORD MODAL -->
-<div id="pw-modal" style="display:none;position:fixed;inset:0;background:rgba(44,26,14,0.7);z-index:200;align-items:center;justify-content:center;">
-  <div style="background:var(--milk);border-radius:18px;padding:2.2rem 2.5rem;width:320px;box-shadow:0 12px 48px rgba(0,0,0,0.25);text-align:center;">
-    <div style="font-family:'Kaisei Opti',serif;font-size:1.2rem;color:var(--brown-deep);margin-bottom:0.4rem;">🔐 營運後台</div>
-    <div style="font-size:0.82rem;color:var(--muted);margin-bottom:1.4rem;">請輸入老闆密碼</div>
+<div id="pw-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;">
+  <div style="background:var(--white);border-radius:14px;padding:2.2rem 2.5rem;width:320px;box-shadow:0 12px 48px rgba(0,0,0,0.2);text-align:center;">
+    <div style="margin-bottom:1.4rem;">
+      <div style="font-family:'Noto Sans TC',sans-serif;font-weight:700;font-size:1.3rem;color:var(--ink);letter-spacing:0.05em;">派西夫</div>
+      <div style="font-family:'Noto Sans TC',sans-serif;font-weight:300;font-size:0.7rem;color:var(--orange);letter-spacing:0.2em;margin-top:2px;">passive cafe</div>
+    </div>
+    <div style="font-size:0.82rem;color:var(--muted);margin-bottom:1.2rem;letter-spacing:0.04em;">請輸入營運後台密碼</div>
     <input type="password" id="pw-input" placeholder="密碼"
-      style="width:100%;padding:0.7rem 1rem;border:1px solid rgba(139,99,67,0.3);border-radius:8px;font-size:1rem;font-family:'Noto Sans TC',sans-serif;margin-bottom:0.8rem;background:white;"
+      style="width:100%;padding:0.7rem 1rem;border:1px solid var(--border);border-radius:8px;font-size:1rem;font-family:'Noto Sans TC',sans-serif;margin-bottom:0.8rem;background:var(--white);color:var(--ink);"
       onkeydown="if(event.key==='Enter')checkPassword()">
-    <div id="pw-error" style="font-size:0.8rem;color:var(--red);margin-bottom:0.6rem;display:none;">密碼錯誤，請再試一次</div>
+    <div id="pw-error" style="font-size:0.78rem;color:var(--red);margin-bottom:0.6rem;display:none;">密碼錯誤，請再試一次</div>
     <div style="display:flex;gap:0.6rem;">
-      <button onclick="checkPassword()" style="flex:1;background:var(--brown-deep);color:var(--caramel-light);border:none;border-radius:8px;padding:0.7rem;font-size:0.9rem;font-family:'Noto Serif TC',serif;cursor:pointer;">進入</button>
-      <button onclick="closePwModal()" style="flex:1;background:none;border:1px solid rgba(139,99,67,0.3);border-radius:8px;padding:0.7rem;font-size:0.9rem;font-family:'Noto Sans TC',sans-serif;cursor:pointer;color:var(--brown-mid);">取消</button>
+      <button onclick="checkPassword()" style="flex:1;background:var(--orange);color:white;border:none;border-radius:8px;padding:0.7rem;font-size:0.9rem;font-family:'Noto Serif TC',serif;font-weight:600;cursor:pointer;">進入</button>
+      <button onclick="closePwModal()" style="flex:1;background:none;border:1px solid var(--border);border-radius:8px;padding:0.7rem;font-size:0.9rem;font-family:'Noto Sans TC',sans-serif;cursor:pointer;color:var(--muted);">取消</button>
     </div>
   </div>
 </div>
@@ -938,10 +882,7 @@ function renderRecord(r) {
   const fin = r.finance || {};
   const store = r.store || {};
 
-  const field = (label, value, field) => isEditing
-    ? `<div class="record-item"><div class="record-item-label">${label}</div><input class="record-item-value editable" data-field="${field}" value="${value||0}" type="number"></div>`
-    : `<div class="record-item"><div class="record-item-label">${label}</div><div class="record-item-value">${value ? '$' + Number(value).toLocaleString() : '—'}</div></div>`;
-
+  // ---- VIEW MODE ----
   const purchaseTable = r.purchases?.length ? `
     <div style="margin-top:0.8rem">
       <div class="photo-label">📦 進貨記錄</div>
@@ -962,10 +903,87 @@ function renderRecord(r) {
 
   const noteHtml = r.notes ? `<div class="record-note">📝 ${r.notes}</div>` : '';
 
+  // ---- EDIT MODE ----
+  const ef = (label, val, eid) =>
+    `<div class="field"><label>${label}</label><input type="number" id="e-${eid}-${r.id}" value="${val||0}"></div>`;
+
+  const editPurchaseRows = (r.purchases||[]).map((p,i) => `
+    <div class="purchase-row" id="epur-row-${r.id}-${i}">
+      <div class="field"><label>品項</label><input type="text" id="epur-item-${r.id}-${i}" value="${p.item||''}"></div>
+      <div class="field"><label>單價</label><input type="number" id="epur-price-${r.id}-${i}" value="${p.price||''}" oninput="eCalcAmt('${r.id}',${i})"></div>
+      <div class="field"><label>數量</label><input type="number" id="epur-qty-${r.id}-${i}" value="${p.qty||''}" oninput="eCalcAmt('${r.id}',${i})"></div>
+      <div class="field purchase-unit"><label>金額</label><input type="number" id="epur-amt-${r.id}-${i}" value="${p.amount||''}" style="background:rgba(196,129,43,0.06);color:var(--brown-mid);" readonly></div>
+      <div class="field purchase-supplier"><label>廠商</label><input type="text" id="epur-sup-${r.id}-${i}" value="${p.supplier||''}"></div>
+      <button class="btn-icon" onclick="eRemovePur('${r.id}',${i})">✕</button>
+    </div>`).join('');
+
+  const editInvRows = (r.inventory||[]).map((iv,i) => `
+    <div class="purchase-row" id="einv-row-${r.id}-${i}">
+      <div class="field"><label>類別</label><input type="text" id="einv-cat-${r.id}-${i}" value="${iv.category||''}"></div>
+      <div class="field"><label>品項</label><input type="text" id="einv-item-${r.id}-${i}" value="${iv.item||''}"></div>
+      <div class="field"><label>數量</label><input type="text" id="einv-qty-${r.id}-${i}" value="${iv.qty||''}"></div>
+      <div class="field purchase-unit"><label>單位</label><input type="text" id="einv-unit-${r.id}-${i}" value="${iv.unit||''}"></div>
+      <div class="field purchase-supplier"><label>備註</label><input type="text" id="einv-note-${r.id}-${i}" value="${iv.note||''}"></div>
+      <button class="btn-icon" onclick="eRemoveInv('${r.id}',${i})">✕</button>
+    </div>`).join('');
+
+  const editForm = `
+    <div style="margin-top:1rem;border-top:1px dashed rgba(139,99,67,0.2);padding-top:1rem;">
+      <div style="font-size:0.78rem;font-weight:500;color:var(--brown-light);margin-bottom:0.8rem;letter-spacing:0.04em;">📅 日期</div>
+      <div class="form-grid" style="margin-bottom:1rem">
+        <div class="field"><label>日期</label><input type="date" id="e-date-${r.id}" value="${r.date||''}"></div>
+      </div>
+
+      <div style="font-size:0.78rem;font-weight:500;color:var(--brown-light);margin-bottom:0.8rem;letter-spacing:0.04em;">💰 營收</div>
+      <div class="form-grid cols-3" style="margin-bottom:1rem">
+        ${ef('營收總額','revenue.total' in r ? r.revenue.total : rev.total, 'rev-total')}
+        ${ef('悠遊卡', rev.easycard, 'rev-easycard')}
+        ${ef('悠遊卡筆數', rev.easycardCount, 'rev-easycardcount')}
+        ${ef('街口支付', rev.jkopay, 'rev-jkopay')}
+        ${ef('街口筆數', rev.jkopayCount, 'rev-jkopaycount')}
+        ${ef('FoodPanda', rev.panda, 'rev-panda')}
+        ${ef('現金收入', rev.cash, 'rev-cash')}
+        ${ef('實收現金', rev.cashActual, 'rev-cashactual')}
+        ${ef('溢收', rev.overflow, 'rev-overflow')}
+      </div>
+
+      <div style="font-size:0.78rem;font-weight:500;color:var(--brown-light);margin-bottom:0.8rem;letter-spacing:0.04em;">🏷️ 儲值 / 寄杯</div>
+      <div class="form-grid cols-3" style="margin-bottom:1rem">
+        ${ef('儲值寄杯使用數', store.used, 'store-used')}
+        ${ef('出杯數', store.cups, 'store-cups')}
+        ${ef('儲值金額', store.value, 'store-value')}
+      </div>
+
+      <div style="font-size:0.78rem;font-weight:500;color:var(--brown-light);margin-bottom:0.8rem;letter-spacing:0.04em;">🏦 存款 / 零用金</div>
+      <div class="form-grid cols-3" style="margin-bottom:1rem">
+        ${ef('今日存款', fin.deposit, 'fin-deposit')}
+        ${ef('支出帳款', fin.expense, 'fin-expense')}
+        ${ef('零用金餘額', fin.pettyCash, 'fin-pettycash')}
+      </div>
+
+      <div style="font-size:0.78rem;font-weight:500;color:var(--brown-light);margin-bottom:0.8rem;letter-spacing:0.04em;">📦 進貨記錄</div>
+      <div id="epur-list-${r.id}">${editPurchaseRows}</div>
+      <button class="btn-add" style="margin-bottom:1rem" onclick="eAddPur('${r.id}')">＋ 新增進貨</button>
+
+      <div style="font-size:0.78rem;font-weight:500;color:var(--brown-light);margin-bottom:0.8rem;letter-spacing:0.04em;">🗄️ 庫存記錄</div>
+      <div id="einv-list-${r.id}">${editInvRows}</div>
+      <button class="btn-add" style="margin-bottom:1rem" onclick="eAddInv('${r.id}')">＋ 新增庫存</button>
+
+      <div style="font-size:0.78rem;font-weight:500;color:var(--brown-light);margin-bottom:0.5rem;letter-spacing:0.04em;">📝 備註</div>
+      <div class="field" style="margin-bottom:1rem">
+        <textarea id="e-notes-${r.id}" style="min-height:60px">${r.notes||''}</textarea>
+      </div>
+
+      <div style="display:flex;gap:0.5rem">
+        <button class="btn-save" style="padding:0.5rem 1.5rem;font-size:0.85rem" onclick="saveRecord('${r.id}')">✅ 儲存</button>
+        <button class="btn-edit" onclick="cancelEdit()">取消</button>
+      </div>
+    </div>`;
+
   const actionsHtml = isEditing
     ? `<div class="record-actions">
-        <button class="btn-save" onclick="saveRecord('${r.id}')">儲存</button>
-        <button class="btn-edit" onclick="cancelEdit()">取消</button>
+        <button class="btn-edit" onclick="cancelEdit()">取消編輯</button>
+        <button class="btn-danger" onclick="deleteRecord('${r.id}', '${r.date}')">刪除</button>
        </div>`
     : `<div class="record-actions">
         <button class="btn-edit" onclick="startEdit('${r.id}')">編輯</button>
@@ -981,37 +999,100 @@ function renderRecord(r) {
         ${actionsHtml}
       </div>
     </div>
+    ${!isEditing ? `
     <div class="record-grid">
-      ${field('悠遊卡', rev.easycard, 'revenue.easycard')}
-      ${field('街口支付', rev.jkopay, 'revenue.jkopay')}
-      ${field('FoodPanda', rev.panda, 'revenue.panda')}
-      ${field('現金收入', rev.cash, 'revenue.cash')}
-      ${field('實收現金', rev.cashActual, 'revenue.cashActual')}
-      ${field('存款', fin.deposit, 'finance.deposit')}
-      ${field('支出帳款', fin.expense, 'finance.expense')}
-      ${field('零用金餘額', fin.pettyCash, 'finance.pettyCash')}
+      <div class="record-item"><div class="record-item-label">悠遊卡</div><div class="record-item-value">${rev.easycard ? '$'+Number(rev.easycard).toLocaleString() : '—'}</div></div>
+      <div class="record-item"><div class="record-item-label">街口支付</div><div class="record-item-value">${rev.jkopay ? '$'+Number(rev.jkopay).toLocaleString() : '—'}</div></div>
+      <div class="record-item"><div class="record-item-label">FoodPanda</div><div class="record-item-value">${rev.panda ? '$'+Number(rev.panda).toLocaleString() : '—'}</div></div>
+      <div class="record-item"><div class="record-item-label">現金收入</div><div class="record-item-value">${rev.cash ? '$'+Number(rev.cash).toLocaleString() : '—'}</div></div>
+      <div class="record-item"><div class="record-item-label">實收現金</div><div class="record-item-value">${rev.cashActual ? '$'+Number(rev.cashActual).toLocaleString() : '—'}</div></div>
+      <div class="record-item"><div class="record-item-label">存款</div><div class="record-item-value">${fin.deposit ? '$'+Number(fin.deposit).toLocaleString() : '—'}</div></div>
+      <div class="record-item"><div class="record-item-label">支出帳款</div><div class="record-item-value">${fin.expense ? '$'+Number(fin.expense).toLocaleString() : '—'}</div></div>
+      <div class="record-item"><div class="record-item-label">零用金餘額</div><div class="record-item-value">${fin.pettyCash ? '$'+Number(fin.pettyCash).toLocaleString() : '—'}</div></div>
     </div>
     ${purchaseTable}
     ${inventoryTable}
     ${noteHtml}
+    ` : editForm}
   </div>`;
 }
+
+// Edit helpers for purchase rows
+function eCalcAmt(rid, i) {
+  const price = parseFloat(document.getElementById(`epur-price-${rid}-${i}`)?.value)||0;
+  const qty = parseFloat(document.getElementById(`epur-qty-${rid}-${i}`)?.value)||0;
+  const amt = document.getElementById(`epur-amt-${rid}-${i}`);
+  if (amt) amt.value = price && qty ? price * qty : '';
+}
+function eAddPur(rid) {
+  const list = document.getElementById(`epur-list-${rid}`);
+  const i = list.children.length;
+  const div = document.createElement('div');
+  div.className = 'purchase-row'; div.id = `epur-row-${rid}-${i}`;
+  div.innerHTML = `
+    <div class="field"><label>品項</label><input type="text" id="epur-item-${rid}-${i}"></div>
+    <div class="field"><label>單價</label><input type="number" id="epur-price-${rid}-${i}" oninput="eCalcAmt('${rid}',${i})"></div>
+    <div class="field"><label>數量</label><input type="number" id="epur-qty-${rid}-${i}" oninput="eCalcAmt('${rid}',${i})"></div>
+    <div class="field purchase-unit"><label>金額</label><input type="number" id="epur-amt-${rid}-${i}" style="background:rgba(196,129,43,0.06)" readonly></div>
+    <div class="field purchase-supplier"><label>廠商</label><input type="text" id="epur-sup-${rid}-${i}"></div>
+    <button class="btn-icon" onclick="eRemovePur('${rid}',${i})">✕</button>`;
+  list.appendChild(div);
+}
+function eRemovePur(rid, i) { document.getElementById(`epur-row-${rid}-${i}`)?.remove(); }
+function eAddInv(rid) {
+  const list = document.getElementById(`einv-list-${rid}`);
+  const i = list.children.length;
+  const div = document.createElement('div');
+  div.className = 'purchase-row'; div.id = `einv-row-${rid}-${i}`;
+  div.innerHTML = `
+    <div class="field"><label>類別</label><input type="text" id="einv-cat-${rid}-${i}"></div>
+    <div class="field"><label>品項</label><input type="text" id="einv-item-${rid}-${i}"></div>
+    <div class="field"><label>數量</label><input type="text" id="einv-qty-${rid}-${i}"></div>
+    <div class="field purchase-unit"><label>單位</label><input type="text" id="einv-unit-${rid}-${i}"></div>
+    <div class="field purchase-supplier"><label>備註</label><input type="text" id="einv-note-${rid}-${i}"></div>
+    <button class="btn-icon" onclick="eRemoveInv('${rid}',${i})">✕</button>`;
+  list.appendChild(div);
+}
+function eRemoveInv(rid, i) { document.getElementById(`einv-row-${rid}-${i}`)?.remove(); }
 
 function startEdit(id) { editingId = id; renderRecords(allRecords); }
 function cancelEdit() { editingId = null; renderRecords(allRecords); }
 
 async function saveRecord(id) {
   const fb = window._firebase;
-  const card = document.getElementById('card-' + id);
-  const inputs = card.querySelectorAll('.editable');
-  const updates = {};
-  inputs.forEach(input => {
-    const path = input.dataset.field.split('.');
-    if (path.length === 2) {
-      if (!updates[path[0]]) updates[path[0]] = {};
-      updates[path[0]][path[1]] = parseFloat(input.value) || 0;
-    }
-  });
+  const rid = id;
+  // Collect purchases
+  const purList = document.getElementById(`epur-list-${rid}`);
+  const purchases = Array.from(purList?.children||[]).map((row,i) => ({
+    item: document.getElementById(`epur-item-${rid}-${i}`)?.value||'',
+    price: document.getElementById(`epur-price-${rid}-${i}`)?.value||'',
+    qty: document.getElementById(`epur-qty-${rid}-${i}`)?.value||'',
+    amount: document.getElementById(`epur-amt-${rid}-${i}`)?.value||'',
+    supplier: document.getElementById(`epur-sup-${rid}-${i}`)?.value||'',
+  })).filter(p => p.item);
+  // Collect inventory
+  const invList = document.getElementById(`einv-list-${rid}`);
+  const inventory = Array.from(invList?.children||[]).map((row,i) => ({
+    category: document.getElementById(`einv-cat-${rid}-${i}`)?.value||'',
+    item: document.getElementById(`einv-item-${rid}-${i}`)?.value||'',
+    qty: document.getElementById(`einv-qty-${rid}-${i}`)?.value||'',
+    unit: document.getElementById(`einv-unit-${rid}-${i}`)?.value||'',
+    note: document.getElementById(`einv-note-${rid}-${i}`)?.value||'',
+  })).filter(p => p.item);
+
+  const g = (eid) => parseFloat(document.getElementById(`e-${eid}-${rid}`)?.value)||0;
+  const updates = {
+    date: document.getElementById(`e-date-${rid}`)?.value || '',
+    revenue: {
+      total: g('rev-total'), easycard: g('rev-easycard'), easycardCount: g('rev-easycardcount'),
+      jkopay: g('rev-jkopay'), jkopayCount: g('rev-jkopaycount'), panda: g('rev-panda'),
+      cash: g('rev-cash'), cashActual: g('rev-cashactual'), overflow: g('rev-overflow'),
+    },
+    store: { used: g('store-used'), cups: g('store-cups'), value: g('store-value') },
+    finance: { deposit: g('fin-deposit'), expense: g('fin-expense'), pettyCash: g('fin-pettycash') },
+    notes: document.getElementById(`e-notes-${rid}`)?.value||'',
+    purchases, inventory,
+  };
   try {
     await fb.updateDoc(fb.doc(fb.db, 'records', id), updates);
     editingId = null;
