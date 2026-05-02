@@ -437,6 +437,10 @@
         <label>儲值金額</label>
         <input type="number" id="store-value" placeholder="0">
       </div>
+      <div class="field">
+        <label>出餐數</label>
+        <input type="number" id="store-meals" placeholder="0">
+      </div>
     </div>
   </div>
 
@@ -497,6 +501,20 @@
   </div>
 
   <!-- Stats -->
+  <!-- 出杯/出餐 大數字顯眼區 -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+    <div style="background:var(--orange);border-radius:12px;padding:1.2rem 1.5rem;text-align:center;box-shadow:0 4px 16px rgba(244,121,32,0.25);">
+      <div style="font-size:0.72rem;color:rgba(255,255,255,0.8);letter-spacing:0.08em;margin-bottom:0.4rem;">☕ 本月累計出杯</div>
+      <div style="font-family:'Kaisei Opti',serif;font-size:2.2rem;color:white;line-height:1;" id="stat-cups">—</div>
+      <div style="font-size:0.7rem;color:rgba(255,255,255,0.7);margin-top:0.3rem;">杯</div>
+    </div>
+    <div style="background:var(--ink);border-radius:12px;padding:1.2rem 1.5rem;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.15);">
+      <div style="font-size:0.72rem;color:rgba(255,255,255,0.6);letter-spacing:0.08em;margin-bottom:0.4rem;">🍽️ 本月累計出餐</div>
+      <div style="font-family:'Kaisei Opti',serif;font-size:2.2rem;color:white;line-height:1;" id="stat-meals">—</div>
+      <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);margin-top:0.3rem;">份</div>
+    </div>
+  </div>
+
   <div class="stats-row" id="stats-row">
     <div class="stat-box">
       <div class="stat-label">本月總營收</div>
@@ -786,7 +804,7 @@ async function submitRecord() {
         used: num('store-used'),
         cups: num('store-cups'),
         value: num('store-value'),
-        settle: num('store-settle'),
+        meals: num('store-meals'),
       },
       finance: {
         deposit: num('deposit'),
@@ -861,10 +879,14 @@ function updateStats(records) {
   const rev = records.reduce((s,r) => s + (r.revenue?.total||0), 0);
   const dep = records.reduce((s,r) => s + (r.finance?.deposit||0), 0);
   const exp = records.reduce((s,r) => s + (r.finance?.expense||0), 0);
+  const cups = records.reduce((s,r) => s + (r.store?.cups||0), 0);
+  const meals = records.reduce((s,r) => s + (r.store?.meals||0), 0);
   document.getElementById('stat-revenue').textContent = '$' + rev.toLocaleString();
   document.getElementById('stat-deposit').textContent = '$' + dep.toLocaleString();
   document.getElementById('stat-expense').textContent = '$' + exp.toLocaleString();
   document.getElementById('stat-days').textContent = records.length + ' 天';
+  document.getElementById('stat-cups').textContent = cups.toLocaleString();
+  document.getElementById('stat-meals').textContent = meals.toLocaleString();
 }
 
 function renderRecords(records) {
@@ -952,6 +974,7 @@ function renderRecord(r) {
         ${ef('儲值寄杯使用數', store.used, 'store-used')}
         ${ef('出杯數', store.cups, 'store-cups')}
         ${ef('儲值金額', store.value, 'store-value')}
+        ${ef('出餐數', store.meals, 'store-meals')}
       </div>
 
       <div style="font-size:0.78rem;font-weight:500;color:var(--brown-light);margin-bottom:0.8rem;letter-spacing:0.04em;">🏦 存款 / 零用金</div>
@@ -1006,6 +1029,14 @@ function renderRecord(r) {
       <div class="record-item"><div class="record-item-label">FoodPanda</div><div class="record-item-value">${rev.panda ? '$'+Number(rev.panda).toLocaleString() : '—'}</div></div>
       <div class="record-item"><div class="record-item-label">現金收入</div><div class="record-item-value">${rev.cash ? '$'+Number(rev.cash).toLocaleString() : '—'}</div></div>
       <div class="record-item"><div class="record-item-label">實收現金</div><div class="record-item-value">${rev.cashActual ? '$'+Number(rev.cashActual).toLocaleString() : '—'}</div></div>
+      <div class="record-item" style="border-left:2px solid var(--orange);padding-left:0.5rem">
+        <div class="record-item-label">☕ 出杯數</div>
+        <div class="record-item-value" style="color:var(--orange);font-size:1.1rem;font-weight:600;">${store.cups || '—'}</div>
+      </div>
+      <div class="record-item" style="border-left:2px solid var(--ink);padding-left:0.5rem">
+        <div class="record-item-label">🍽️ 出餐數</div>
+        <div class="record-item-value" style="font-size:1.1rem;font-weight:600;">${store.meals || '—'}</div>
+      </div>
       <div class="record-item"><div class="record-item-label">存款</div><div class="record-item-value">${fin.deposit ? '$'+Number(fin.deposit).toLocaleString() : '—'}</div></div>
       <div class="record-item"><div class="record-item-label">支出帳款</div><div class="record-item-value">${fin.expense ? '$'+Number(fin.expense).toLocaleString() : '—'}</div></div>
       <div class="record-item"><div class="record-item-label">零用金餘額</div><div class="record-item-value">${fin.pettyCash ? '$'+Number(fin.pettyCash).toLocaleString() : '—'}</div></div>
@@ -1088,7 +1119,7 @@ async function saveRecord(id) {
       jkopay: g('rev-jkopay'), jkopayCount: g('rev-jkopaycount'), panda: g('rev-panda'),
       cash: g('rev-cash'), cashActual: g('rev-cashactual'), overflow: g('rev-overflow'),
     },
-    store: { used: g('store-used'), cups: g('store-cups'), value: g('store-value') },
+    store: { used: g('store-used'), cups: g('store-cups'), value: g('store-value'), meals: g('store-meals') },
     finance: { deposit: g('fin-deposit'), expense: g('fin-expense'), pettyCash: g('fin-pettycash') },
     notes: document.getElementById(`e-notes-${rid}`)?.value||'',
     purchases, inventory,
