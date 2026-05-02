@@ -1064,7 +1064,7 @@ function renderRecord(r) {
 
       <div style="font-size:0.78rem;font-weight:500;color:var(--brown-light);margin-bottom:0.8rem;letter-spacing:0.04em;">🏦 存款 / 零用金</div>
       <div class="form-grid cols-3" style="margin-bottom:0.5rem">
-        ${ef('實收現金', rev.cashActual, 'rev-cashactual2')}
+        ${ef('實收現金', rev.cashActual, 'rev-cashactual')}
         ${ef('今日零用金收入', fin.pettyIncome, 'fin-pettyincome')}
         ${ef('今日派西夫支出', fin.expensePassive !== undefined ? fin.expensePassive : fin.expense, 'fin-exppassive')}
         ${ef('今日智域支出', fin.expenseIqrator, 'fin-expiqrator')}
@@ -1199,26 +1199,32 @@ async function saveRecord(id) {
   // Collect purchases
   const purList = document.getElementById(`epur-list-${rid}`);
   const purchases = Array.from(purList?.children||[]).map((row,i) => ({
-    item: document.getElementById(`epur-item-${rid}-${i}`)?.value||'',
-    price: document.getElementById(`epur-price-${rid}-${i}`)?.value||'',
-    qty: document.getElementById(`epur-qty-${rid}-${i}`)?.value||'',
-    amount: document.getElementById(`epur-amt-${rid}-${i}`)?.value||'',
-    supplier: document.getElementById(`epur-sup-${rid}-${i}`)?.value||'',
-    owner: document.getElementById(`epur-owner-${rid}-${i}`)?.value||'派西夫',
+    item: document.querySelector(`[id="epur-item-${rid}-${i}"]`)?.value||'',
+    price: document.querySelector(`[id="epur-price-${rid}-${i}"]`)?.value||'',
+    qty: document.querySelector(`[id="epur-qty-${rid}-${i}"]`)?.value||'',
+    amount: document.querySelector(`[id="epur-amt-${rid}-${i}"]`)?.value||'',
+    supplier: document.querySelector(`[id="epur-sup-${rid}-${i}"]`)?.value||'',
+    owner: document.querySelector(`[id="epur-owner-${rid}-${i}"]`)?.value||'派西夫',
   })).filter(p => p.item);
   // Collect inventory
-  const invList = document.getElementById(`einv-list-${rid}`);
+  const invList = document.querySelector(`[id="einv-list-${rid}"]`);
   const inventory = Array.from(invList?.children||[]).map((row,i) => ({
-    category: document.getElementById(`einv-cat-${rid}-${i}`)?.value||'',
-    item: document.getElementById(`einv-item-${rid}-${i}`)?.value||'',
-    qty: document.getElementById(`einv-qty-${rid}-${i}`)?.value||'',
-    unit: document.getElementById(`einv-unit-${rid}-${i}`)?.value||'',
-    note: document.getElementById(`einv-note-${rid}-${i}`)?.value||'',
+    category: document.querySelector(`[id="einv-cat-${rid}-${i}"]`)?.value||'',
+    item: document.querySelector(`[id="einv-item-${rid}-${i}"]`)?.value||'',
+    qty: document.querySelector(`[id="einv-qty-${rid}-${i}"]`)?.value||'',
+    unit: document.querySelector(`[id="einv-unit-${rid}-${i}"]`)?.value||'',
+    note: document.querySelector(`[id="einv-note-${rid}-${i}"]`)?.value||'',
   })).filter(p => p.item);
 
-  const g = (eid) => parseFloat(document.getElementById(`e-${eid}-${rid}`)?.value)||0;
+  const g = (eid) => {
+    // Firebase IDs can contain special chars — use querySelector with escaped selector
+    try {
+      const el = document.querySelector(`[id="e-${eid}-${rid}"]`);
+      return parseFloat(el?.value) || 0;
+    } catch(e) { return 0; }
+  };
   const updates = {
-    date: document.getElementById(`e-date-${rid}`)?.value || '',
+    date: document.querySelector(`[id="e-date-${rid}"]`)?.value || '',
     revenue: {
       total: g('rev-total'), easycard: g('rev-easycard'), easycardCount: g('rev-easycardcount'),
       jkopay: g('rev-jkopay'), jkopayCount: g('rev-jkopaycount'), panda: g('rev-panda'),
@@ -1233,7 +1239,7 @@ async function saveRecord(id) {
       pettyCash: g('fin-pettycash'),
       pettyIncome: g('fin-pettyincome'),
     },
-    notes: document.getElementById(`e-notes-${rid}`)?.value||'',
+    notes: document.querySelector(`[id="e-notes-${rid}"]`)?.value||'',
     purchases, inventory,
   };
   try {
