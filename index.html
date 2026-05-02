@@ -1009,12 +1009,18 @@ function renderRecord(r) {
     `<div class="field"><label>${label}</label><input type="number" id="e-${eid}-${r.id}" value="${val||0}"></div>`;
 
   const editPurchaseRows = (r.purchases||[]).map((p,i) => `
-    <div class="purchase-row" id="epur-row-${r.id}-${i}">
+    <div class="purchase-row" id="epur-row-${r.id}-${i}" style="grid-template-columns:2fr 1fr 1fr 1fr 1.2fr 1fr auto">
       <div class="field"><label>品項</label><input type="text" id="epur-item-${r.id}-${i}" value="${p.item||''}"></div>
       <div class="field"><label>單價</label><input type="number" id="epur-price-${r.id}-${i}" value="${p.price||''}" oninput="eCalcAmt('${r.id}',${i})"></div>
       <div class="field"><label>數量</label><input type="number" id="epur-qty-${r.id}-${i}" value="${p.qty||''}" oninput="eCalcAmt('${r.id}',${i})"></div>
-      <div class="field purchase-unit"><label>金額</label><input type="number" id="epur-amt-${r.id}-${i}" value="${p.amount||''}" style="background:rgba(196,129,43,0.06);color:var(--brown-mid);" readonly></div>
+      <div class="field"><label>金額</label><input type="number" id="epur-amt-${r.id}-${i}" value="${p.amount||''}" style="background:rgba(244,121,32,0.06);color:var(--orange);" readonly></div>
       <div class="field purchase-supplier"><label>廠商</label><input type="text" id="epur-sup-${r.id}-${i}" value="${p.supplier||''}"></div>
+      <div class="field"><label>歸屬</label>
+        <select id="epur-owner-${r.id}-${i}" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.5rem;font-size:0.85rem;font-family:'Noto Sans TC',sans-serif;color:var(--ink);">
+          <option value="派西夫" ${(p.owner||'派西夫')==='派西夫'?'selected':''}>派西夫</option>
+          <option value="智域" ${p.owner==='智域'?'selected':''}>智域</option>
+        </select>
+      </div>
       <button class="btn-icon" onclick="eRemovePur('${r.id}',${i})">✕</button>
     </div>`).join('');
 
@@ -1057,10 +1063,16 @@ function renderRecord(r) {
       </div>
 
       <div style="font-size:0.78rem;font-weight:500;color:var(--brown-light);margin-bottom:0.8rem;letter-spacing:0.04em;">🏦 存款 / 零用金</div>
-      <div class="form-grid cols-3" style="margin-bottom:1rem">
+      <div class="form-grid cols-3" style="margin-bottom:0.5rem">
+        ${ef('實收現金', rev.cashActual, 'rev-cashactual2')}
+        ${ef('今日零用金收入', fin.pettyIncome, 'fin-pettyincome')}
+        ${ef('今日派西夫支出', fin.expensePassive !== undefined ? fin.expensePassive : fin.expense, 'fin-exppassive')}
+        ${ef('今日智域支出', fin.expenseIqrator, 'fin-expiqrator')}
         ${ef('今日存款', fin.deposit, 'fin-deposit')}
-        ${ef('支出帳款', fin.expense, 'fin-expense')}
         ${ef('零用金餘額', fin.pettyCash, 'fin-pettycash')}
+      </div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-bottom:1rem;padding:0.4rem 0.6rem;background:var(--light-gray);border-radius:6px;">
+        💡 存款 ＝ 實收現金 − 零用金收入 ／ 零用金餘額 ＝ 前日餘額 + 零用金收入 − 派西夫支出
       </div>
 
       <div style="font-size:0.78rem;font-weight:500;color:var(--brown-light);margin-bottom:0.8rem;letter-spacing:0.04em;">📦 進貨記錄</div>
@@ -1150,8 +1162,14 @@ function eAddPur(rid) {
     <div class="field"><label>品項</label><input type="text" id="epur-item-${rid}-${i}"></div>
     <div class="field"><label>單價</label><input type="number" id="epur-price-${rid}-${i}" oninput="eCalcAmt('${rid}',${i})"></div>
     <div class="field"><label>數量</label><input type="number" id="epur-qty-${rid}-${i}" oninput="eCalcAmt('${rid}',${i})"></div>
-    <div class="field purchase-unit"><label>金額</label><input type="number" id="epur-amt-${rid}-${i}" style="background:rgba(196,129,43,0.06)" readonly></div>
+    <div class="field"><label>金額</label><input type="number" id="epur-amt-${rid}-${i}" style="background:rgba(244,121,32,0.06);color:var(--orange);" readonly></div>
     <div class="field purchase-supplier"><label>廠商</label><input type="text" id="epur-sup-${rid}-${i}"></div>
+    <div class="field"><label>歸屬</label>
+      <select id="epur-owner-${rid}-${i}" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.5rem;font-size:0.85rem;font-family:'Noto Sans TC',sans-serif;">
+        <option value="派西夫">派西夫</option>
+        <option value="智域">智域</option>
+      </select>
+    </div>
     <button class="btn-icon" onclick="eRemovePur('${rid}',${i})">✕</button>`;
   list.appendChild(div);
 }
@@ -1186,6 +1204,7 @@ async function saveRecord(id) {
     qty: document.getElementById(`epur-qty-${rid}-${i}`)?.value||'',
     amount: document.getElementById(`epur-amt-${rid}-${i}`)?.value||'',
     supplier: document.getElementById(`epur-sup-${rid}-${i}`)?.value||'',
+    owner: document.getElementById(`epur-owner-${rid}-${i}`)?.value||'派西夫',
   })).filter(p => p.item);
   // Collect inventory
   const invList = document.getElementById(`einv-list-${rid}`);
@@ -1206,7 +1225,14 @@ async function saveRecord(id) {
       cash: g('rev-cash'), cashActual: g('rev-cashactual'), overflow: g('rev-overflow'),
     },
     store: { used: g('store-used'), cups: g('store-cups'), value: g('store-value'), meals: g('store-meals') },
-    finance: { deposit: g('fin-deposit'), expense: g('fin-expense'), pettyCash: g('fin-pettycash') },
+    finance: {
+      deposit: g('fin-deposit'),
+      expensePassive: g('fin-exppassive'),
+      expenseIqrator: g('fin-expiqrator'),
+      expense: g('fin-exppassive') + g('fin-expiqrator'),
+      pettyCash: g('fin-pettycash'),
+      pettyIncome: g('fin-pettyincome'),
+    },
     notes: document.getElementById(`e-notes-${rid}`)?.value||'',
     purchases, inventory,
   };
