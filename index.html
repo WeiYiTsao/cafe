@@ -951,7 +951,11 @@ function clearFilter() {
 function updateStats(records) {
   const rev = records.reduce((s,r) => s + (r.revenue?.total||0), 0);
   const dep = records.reduce((s,r) => s + (r.finance?.deposit||0), 0);
-  const expPassive = records.reduce((s,r) => s + (r.finance?.expensePassive || r.finance?.expense||0), 0);
+  const expPassive = records.reduce((s,r) => {
+    const fin = r.finance || {};
+    // 若有獨立欄位就用，否則不計入（避免混用舊資料）
+    return s + (fin.expensePassive !== undefined ? fin.expensePassive : 0);
+  }, 0);
   const expIqrator = records.reduce((s,r) => s + (r.finance?.expenseIqrator||0), 0);
   const cups = records.reduce((s,r) => s + (r.store?.cups||0), 0);
   const meals = records.reduce((s,r) => s + (r.store?.meals||0), 0);
@@ -1066,7 +1070,7 @@ function renderRecord(r) {
       <div class="form-grid cols-3" style="margin-bottom:0.5rem">
         ${ef('實收現金', rev.cashActual, 'rev-cashactual')}
         ${ef('今日零用金收入', fin.pettyIncome, 'fin-pettyincome')}
-        ${ef('今日派西夫支出', fin.expensePassive !== undefined ? fin.expensePassive : fin.expense, 'fin-exppassive')}
+        ${ef('今日派西夫支出', fin.expensePassive !== undefined ? fin.expensePassive : 0, 'fin-exppassive')}
         ${ef('今日智域支出', fin.expenseIqrator, 'fin-expiqrator')}
         ${ef('今日存款', fin.deposit, 'fin-deposit')}
         ${ef('零用金餘額', fin.pettyCash, 'fin-pettycash')}
@@ -1131,7 +1135,7 @@ function renderRecord(r) {
       <div class="record-item"><div class="record-item-label">存款</div><div class="record-item-value">${fin.deposit ? '$'+Number(fin.deposit).toLocaleString() : '—'}</div></div>
       <div class="record-item" style="border-left:2px solid var(--orange);padding-left:0.5rem">
         <div class="record-item-label">派西夫支出</div>
-        <div class="record-item-value" style="color:var(--orange)">${fin.expensePassive !== undefined ? '$'+Number(fin.expensePassive).toLocaleString() : (fin.expense ? '$'+Number(fin.expense).toLocaleString() : '—')}</div>
+        <div class="record-item-value" style="color:var(--orange)">${fin.expensePassive !== undefined ? '$'+Number(fin.expensePassive).toLocaleString() : '—'}</div>
       </div>
       <div class="record-item" style="border-left:2px solid var(--ink-mid);padding-left:0.5rem">
         <div class="record-item-label">智域支出</div>
