@@ -397,9 +397,25 @@
   <div class="nav-brand">☕ 派西夫咖啡</div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="switchPage('cashier')">店長記帳</button>
-    <button class="nav-tab" onclick="switchPage('admin')">老闆後台</button>
+    <button class="nav-tab" onclick="promptPassword()">營運後台</button>
   </div>
 </nav>
+
+<!-- PASSWORD MODAL -->
+<div id="pw-modal" style="display:none;position:fixed;inset:0;background:rgba(44,26,14,0.7);z-index:200;align-items:center;justify-content:center;">
+  <div style="background:var(--milk);border-radius:18px;padding:2.2rem 2.5rem;width:320px;box-shadow:0 12px 48px rgba(0,0,0,0.25);text-align:center;">
+    <div style="font-family:'Kaisei Opti',serif;font-size:1.2rem;color:var(--brown-deep);margin-bottom:0.4rem;">🔐 營運後台</div>
+    <div style="font-size:0.82rem;color:var(--muted);margin-bottom:1.4rem;">請輸入老闆密碼</div>
+    <input type="password" id="pw-input" placeholder="密碼"
+      style="width:100%;padding:0.7rem 1rem;border:1px solid rgba(139,99,67,0.3);border-radius:8px;font-size:1rem;font-family:'Noto Sans TC',sans-serif;margin-bottom:0.8rem;background:white;"
+      onkeydown="if(event.key==='Enter')checkPassword()">
+    <div id="pw-error" style="font-size:0.8rem;color:var(--red);margin-bottom:0.6rem;display:none;">密碼錯誤，請再試一次</div>
+    <div style="display:flex;gap:0.6rem;">
+      <button onclick="checkPassword()" style="flex:1;background:var(--brown-deep);color:var(--caramel-light);border:none;border-radius:8px;padding:0.7rem;font-size:0.9rem;font-family:'Noto Serif TC',serif;cursor:pointer;">進入</button>
+      <button onclick="closePwModal()" style="flex:1;background:none;border:1px solid rgba(139,99,67,0.3);border-radius:8px;padding:0.7rem;font-size:0.9rem;font-family:'Noto Sans TC',sans-serif;cursor:pointer;color:var(--brown-mid);">取消</button>
+    </div>
+  </div>
+</div>
 
 <!-- ============================= -->
 <!-- CASHIER PAGE                  -->
@@ -477,10 +493,6 @@
         <label>儲值金額</label>
         <input type="number" id="store-value" placeholder="0">
       </div>
-      <div class="field">
-        <label>清帳金額</label>
-        <input type="number" id="store-settle" placeholder="0">
-      </div>
     </div>
   </div>
 
@@ -536,7 +548,7 @@
 <!-- ============================= -->
 <div class="page" id="page-admin">
   <div class="page-header">
-    <div class="page-title">帳務後台</div>
+    <div class="page-title">營運後台</div>
     <div class="page-date" id="admin-date"></div>
   </div>
 
@@ -563,6 +575,9 @@
   <div class="admin-toolbar">
     <input type="month" id="filter-month" onchange="filterByMonth()">
     <button class="btn-secondary" onclick="clearFilter()">顯示全部</button>
+    <input type="date" id="export-single-date" style="background:var(--surface);border:1px solid rgba(139,99,67,0.25);border-radius:8px;padding:0.55rem 0.8rem;font-size:0.85rem;font-family:'Noto Sans TC',sans-serif;color:var(--ink);">
+    <button class="btn-secondary" onclick="exportSingleDay()" style="border-color:rgba(39,121,90,0.4);color:var(--green);">📄 匯出單日</button>
+    <button class="btn-secondary" onclick="exportMonth()" style="border-color:rgba(39,121,90,0.4);color:var(--green);">📊 匯出整月</button>
     <button class="btn-secondary" style="margin-left:auto" onclick="toggleNewForm()">＋ 手動新增</button>
   </div>
 
@@ -599,12 +614,103 @@
 
 <script>
 // =================== PAGE SWITCH ===================
+// 🔐 請在這裡設定老闆密碼
+const ADMIN_PASSWORD = 'passive2026';
+
 function switchPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   event.target.classList.add('active');
   if (name === 'admin') loadRecords();
+}
+
+function promptPassword() {
+  document.getElementById('pw-modal').style.display = 'flex';
+  document.getElementById('pw-input').value = '';
+  document.getElementById('pw-error').style.display = 'none';
+  setTimeout(() => document.getElementById('pw-input').focus(), 100);
+}
+function closePwModal() {
+  document.getElementById('pw-modal').style.display = 'none';
+}
+function checkPassword() {
+  const val = document.getElementById('pw-input').value;
+  if (val === ADMIN_PASSWORD) {
+    closePwModal();
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('page-admin').classList.add('active');
+    document.querySelectorAll('.nav-tab')[1].classList.add('active');
+    loadRecords();
+  } else {
+    document.getElementById('pw-error').style.display = 'block';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+
+// =================== EXPORT ===================
+function recordToCSVRows(r) {
+  const rev = r.revenue || {};
+  const fin = r.finance || {};
+  const store = r.store || {};
+  const rows = [];
+  // Main row
+  rows.push([
+    r.date,
+    rev.total||0, rev.easycard||0, rev.easycardCount||0,
+    rev.jkopay||0, rev.jkopayCount||0, rev.panda||0,
+    rev.cash||0, rev.cashActual||0, rev.overflow||0,
+    store.used||0, store.cups||0, store.value||0,
+    fin.deposit||0, fin.expense||0, fin.pettyCash||0,
+    r.notes||''
+  ].map(v => `"${v}"`).join(','));
+  // Purchase rows
+  (r.purchases||[]).forEach(p => {
+    rows.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+      `"${p.item||''}"`, `"${p.price||''}"`, `"${p.qty||''}"`, `"${p.amount||''}"`, `"${p.supplier||''}"`
+    ].join(','));
+  });
+  return rows.join('\n');
+}
+
+function downloadCSV(content, filename) {
+  const BOM = '\uFEFF';
+  const blob = new Blob([BOM + content], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+function buildCSV(records) {
+  const header = [
+    '日期','營收總額','悠遊卡','悠遊卡筆數','街口','街口筆數','FoodPanda',
+    '現金收入','實收現金','溢收',
+    '儲值使用數','出杯數','儲值金額',
+    '存款','支出','零用金餘額','備註',
+    '進貨品項','單價','數量','金額','廠商'
+  ].map(h => `"${h}"`).join(',');
+  const rows = records.map(r => recordToCSVRows(r)).join('\n');
+  return header + '\n' + rows;
+}
+
+function exportSingleDay() {
+  const date = document.getElementById('export-single-date').value;
+  if (!date) { alert('請先選擇要匯出的日期'); return; }
+  const records = allRecords.filter(r => r.date === date);
+  if (!records.length) { alert(`${formatDate(date)} 沒有記帳資料`); return; }
+  downloadCSV(buildCSV(records), `派西夫咖啡_${date}.csv`);
+}
+
+function exportMonth() {
+  const month = document.getElementById('filter-month').value;
+  if (!month) { alert('請先在上方選擇月份篩選器'); return; }
+  const records = allRecords.filter(r => r.date && r.date.startsWith(month));
+  if (!records.length) { alert(`${month} 沒有記帳資料`); return; }
+  const sorted = [...records].sort((a,b) => a.date.localeCompare(b.date));
+  downloadCSV(buildCSV(sorted), `派西夫咖啡_${month}.csv`);
 }
 
 // =================== DATES ===================
@@ -632,13 +738,19 @@ function addPurchaseRow(data={}) {
   row.id = 'pur-' + id;
   row.innerHTML = `
     <div class="field"><label>品項</label><input type="text" id="pur-item-${id}" value="${data.item||''}" placeholder="品項名稱"></div>
-    <div class="field"><label>單價</label><input type="number" id="pur-price-${id}" value="${data.price||''}" placeholder="0"></div>
-    <div class="field"><label>數量</label><input type="number" id="pur-qty-${id}" value="${data.qty||''}" placeholder="0"></div>
-    <div class="field purchase-unit"><label>金額</label><input type="number" id="pur-amt-${id}" value="${data.amount||''}" placeholder="0"></div>
+    <div class="field"><label>單價</label><input type="number" id="pur-price-${id}" value="${data.price||''}" placeholder="0" oninput="calcAmount(${id})"></div>
+    <div class="field"><label>數量</label><input type="number" id="pur-qty-${id}" value="${data.qty||''}" placeholder="0" oninput="calcAmount(${id})"></div>
+    <div class="field purchase-unit"><label>金額（自動）</label><input type="number" id="pur-amt-${id}" value="${data.amount||''}" placeholder="0" style="background:rgba(196,129,43,0.06);color:var(--brown-mid);font-weight:500;" readonly></div>
     <div class="field purchase-supplier"><label>廠商</label><input type="text" id="pur-sup-${id}" value="${data.supplier||''}" placeholder="廠商"></div>
     <button class="btn-icon" onclick="removePurchaseRow(${id})">✕</button>
   `;
   list.appendChild(row);
+}
+function calcAmount(id) {
+  const price = parseFloat(document.getElementById('pur-price-'+id)?.value) || 0;
+  const qty = parseFloat(document.getElementById('pur-qty-'+id)?.value) || 0;
+  const amt = document.getElementById('pur-amt-'+id);
+  if (amt) amt.value = price && qty ? price * qty : '';
 }
 function removePurchaseRow(id) {
   document.getElementById('pur-' + id)?.remove();
@@ -693,7 +805,8 @@ function getInventoryData() {
 
 // Init default rows
 addPurchaseRow();
-addInventoryRow();
+addInventoryRow({ category: '咖啡豆', item: '莎荷配方豆', qty: '', unit: '磅' });
+addInventoryRow({ category: '牛奶', item: '光泉鮮奶', qty: '', unit: '瓶' });
 
 // =================== SUBMIT ===================
 async function submitRecord() {
