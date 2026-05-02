@@ -447,19 +447,35 @@
   <!-- 存款 -->
   <div class="card">
     <div class="card-title"><span class="icon">🏦</span>存款 / 零用金</div>
-    <div class="form-grid">
+    <div class="form-grid cols-3">
       <div class="field">
-        <label>今日存款（元）</label>
-        <input type="number" id="deposit" placeholder="0">
+        <label>實收現金（元）</label>
+        <input type="number" id="cash-actual-display" placeholder="自動帶入" style="background:rgba(244,121,32,0.06);color:var(--orange);font-weight:500;" readonly>
       </div>
       <div class="field">
-        <label>支出帳款（元）</label>
-        <input type="number" id="expense" placeholder="0">
+        <label>今日零用金收入（元）</label>
+        <input type="number" id="petty-income" placeholder="0" oninput="autoCalcFinance()">
       </div>
       <div class="field">
-        <label>零用金餘額（元）</label>
-        <input type="number" id="petty-cash" placeholder="0">
+        <label>今日派西夫支出（元）</label>
+        <input type="number" id="expense-passive" placeholder="0" oninput="autoCalcFinance()">
       </div>
+      <div class="field">
+        <label>今日智域支出（元）</label>
+        <input type="number" id="expense-iqrator" placeholder="0">
+      </div>
+      <div class="field">
+        <label>今日存款（自動：實收現金－零用金收入）</label>
+        <input type="number" id="deposit" placeholder="自動計算" style="background:rgba(244,121,32,0.06);color:var(--orange);font-weight:500;" readonly>
+      </div>
+      <div class="field">
+        <label>零用金餘額（自動）</label>
+        <input type="number" id="petty-cash" placeholder="自動計算" style="background:rgba(244,121,32,0.06);color:var(--orange);font-weight:500;" readonly>
+      </div>
+    </div>
+    <div style="font-size:0.75rem;color:var(--muted);margin-top:0.6rem;padding:0.5rem 0.7rem;background:var(--light-gray);border-radius:6px;">
+      💡 零用金餘額 ＝ 前日餘額 + 今日零用金收入 − 今日派西夫支出<br>
+      💡 今日存款 ＝ 實收現金 − 今日零用金收入
     </div>
   </div>
 
@@ -515,7 +531,7 @@
     </div>
   </div>
 
-  <div class="stats-row" id="stats-row">
+  <div class="stats-row" id="stats-row" style="grid-template-columns:repeat(5,1fr)">
     <div class="stat-box">
       <div class="stat-label">本月總營收</div>
       <div class="stat-value" id="stat-revenue">—</div>
@@ -524,9 +540,13 @@
       <div class="stat-label">本月總存款</div>
       <div class="stat-value" id="stat-deposit">—</div>
     </div>
-    <div class="stat-box">
-      <div class="stat-label">本月總支出</div>
+    <div class="stat-box" style="border-top:3px solid var(--orange)">
+      <div class="stat-label">派西夫支出</div>
       <div class="stat-value" id="stat-expense">—</div>
+    </div>
+    <div class="stat-box" style="border-top:3px solid var(--ink)">
+      <div class="stat-label">智域支出</div>
+      <div class="stat-value" id="stat-expense-iq">—</div>
     </div>
     <div class="stat-box">
       <div class="stat-label">記帳天數</div>
@@ -698,12 +718,20 @@ function addPurchaseRow(data={}) {
   const row = document.createElement('div');
   row.className = 'purchase-row';
   row.id = 'pur-' + id;
+  // 7 columns now: item, price, qty, amount, supplier, owner, delete
+  row.style.gridTemplateColumns = '2fr 1fr 1fr 1fr 1.2fr 1fr auto';
   row.innerHTML = `
     <div class="field"><label>品項</label><input type="text" id="pur-item-${id}" value="${data.item||''}" placeholder="品項名稱"></div>
     <div class="field"><label>單價</label><input type="number" id="pur-price-${id}" value="${data.price||''}" placeholder="0" oninput="calcAmount(${id})"></div>
     <div class="field"><label>數量</label><input type="number" id="pur-qty-${id}" value="${data.qty||''}" placeholder="0" oninput="calcAmount(${id})"></div>
-    <div class="field purchase-unit"><label>金額（自動）</label><input type="number" id="pur-amt-${id}" value="${data.amount||''}" placeholder="0" style="background:rgba(196,129,43,0.06);color:var(--brown-mid);font-weight:500;" readonly></div>
+    <div class="field"><label>金額（自動）</label><input type="number" id="pur-amt-${id}" value="${data.amount||''}" placeholder="0" style="background:rgba(244,121,32,0.06);color:var(--orange);font-weight:500;" readonly></div>
     <div class="field purchase-supplier"><label>廠商</label><input type="text" id="pur-sup-${id}" value="${data.supplier||''}" placeholder="廠商"></div>
+    <div class="field"><label>歸屬</label>
+      <select id="pur-owner-${id}" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.5rem;font-size:0.85rem;font-family:'Noto Sans TC',sans-serif;color:var(--ink);">
+        <option value="派西夫" ${(data.owner||'派西夫')==='派西夫'?'selected':''}>派西夫</option>
+        <option value="智域" ${data.owner==='智域'?'selected':''}>智域</option>
+      </select>
+    </div>
     <button class="btn-icon" onclick="removePurchaseRow(${id})">✕</button>
   `;
   list.appendChild(row);
@@ -714,6 +742,47 @@ function calcAmount(id) {
   const amt = document.getElementById('pur-amt-'+id);
   if (amt) amt.value = price && qty ? price * qty : '';
 }
+
+// =================== AUTO CALC FINANCE ===================
+// 從營運後台取得前一天零用金餘額
+let prevPettyCash = 0;
+async function loadPrevPettyCash() {
+  const fb = window._firebase;
+  if (!fb) return;
+  try {
+    const today = document.getElementById('record-date').value;
+    const q = fb.query(fb.collection(fb.db, 'records'), fb.orderBy('date', 'desc'));
+    const snap = await fb.getDocs(q);
+    for (const d of snap.docs) {
+      const r = d.data();
+      if (r.date && r.date < today) {
+        prevPettyCash = r.finance?.pettyCash || 0;
+        break;
+      }
+    }
+    autoCalcFinance();
+  } catch(e) {}
+}
+function autoCalcFinance() {
+  const cashActual = parseFloat(document.getElementById('rev-cash-actual')?.value) || 0;
+  const pettycomeIncome = parseFloat(document.getElementById('petty-income')?.value) || 0;
+  const passiveExp = parseFloat(document.getElementById('expense-passive')?.value) || 0;
+  // 同步顯示實收現金
+  const display = document.getElementById('cash-actual-display');
+  if (display) display.value = cashActual || '';
+  // 今日存款 = 實收現金 - 零用金收入
+  const deposit = cashActual - pettycomeIncome;
+  document.getElementById('deposit').value = deposit >= 0 ? deposit : 0;
+  // 零用金餘額 = 前日餘額 + 今日零用金收入 - 今日派西夫支出
+  const pettyCash = prevPettyCash + pettycomeIncome - passiveExp;
+  document.getElementById('petty-cash').value = pettyCash;
+}
+// 當實收現金改變時也觸發
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('rev-cash-actual')?.addEventListener('input', autoCalcFinance);
+  document.getElementById('record-date')?.addEventListener('change', loadPrevPettyCash);
+  loadPrevPettyCash();
+});
 function removePurchaseRow(id) {
   document.getElementById('pur-' + id)?.remove();
 }
@@ -727,6 +796,7 @@ function getPurchaseData() {
       qty: document.getElementById('pur-qty-'+id)?.value || '',
       amount: document.getElementById('pur-amt-'+id)?.value || '',
       supplier: document.getElementById('pur-sup-'+id)?.value || '',
+      owner: document.getElementById('pur-owner-'+id)?.value || '派西夫',
     };
   }).filter(r => r.item);
 }
@@ -808,8 +878,11 @@ async function submitRecord() {
       },
       finance: {
         deposit: num('deposit'),
-        expense: num('expense'),
+        expense: num('expense-passive') + num('expense-iqrator'),
+        expensePassive: num('expense-passive'),
+        expenseIqrator: num('expense-iqrator'),
         pettyCash: num('petty-cash'),
+        pettyIncome: num('petty-income'),
       },
       purchases: getPurchaseData(),
       inventory: getInventoryData(),
@@ -878,12 +951,14 @@ function clearFilter() {
 function updateStats(records) {
   const rev = records.reduce((s,r) => s + (r.revenue?.total||0), 0);
   const dep = records.reduce((s,r) => s + (r.finance?.deposit||0), 0);
-  const exp = records.reduce((s,r) => s + (r.finance?.expense||0), 0);
+  const expPassive = records.reduce((s,r) => s + (r.finance?.expensePassive || r.finance?.expense||0), 0);
+  const expIqrator = records.reduce((s,r) => s + (r.finance?.expenseIqrator||0), 0);
   const cups = records.reduce((s,r) => s + (r.store?.cups||0), 0);
   const meals = records.reduce((s,r) => s + (r.store?.meals||0), 0);
   document.getElementById('stat-revenue').textContent = '$' + rev.toLocaleString();
   document.getElementById('stat-deposit').textContent = '$' + dep.toLocaleString();
-  document.getElementById('stat-expense').textContent = '$' + exp.toLocaleString();
+  document.getElementById('stat-expense').textContent = '$' + expPassive.toLocaleString();
+  document.getElementById('stat-expense-iq').textContent = '$' + expIqrator.toLocaleString();
   document.getElementById('stat-days').textContent = records.length + ' 天';
   document.getElementById('stat-cups').textContent = cups.toLocaleString();
   document.getElementById('stat-meals').textContent = meals.toLocaleString();
@@ -909,8 +984,12 @@ function renderRecord(r) {
     <div style="margin-top:0.8rem">
       <div class="photo-label">📦 進貨記錄</div>
       <table class="purchase-table">
-        <tr><th>品項</th><th>單價</th><th>數量</th><th>金額</th><th>廠商</th></tr>
-        ${r.purchases.map(p => `<tr><td>${p.item}</td><td>${p.price||'—'}</td><td>${p.qty||'—'}</td><td>${p.amount ? '$'+p.amount : '—'}</td><td>${p.supplier||'—'}</td></tr>`).join('')}
+        <tr><th>品項</th><th>單價</th><th>數量</th><th>金額</th><th>廠商</th><th>歸屬</th></tr>
+        ${r.purchases.map(p => `<tr>
+          <td>${p.item}</td><td>${p.price||'—'}</td><td>${p.qty||'—'}</td>
+          <td>${p.amount ? '$'+p.amount : '—'}</td><td>${p.supplier||'—'}</td>
+          <td><span style="font-size:0.75rem;padding:0.15rem 0.5rem;border-radius:4px;background:${p.owner==='智域'?'rgba(26,20,16,0.08)':'rgba(244,121,32,0.10)'};color:${p.owner==='智域'?'var(--ink-mid)':'var(--orange)'};">${p.owner||'派西夫'}</span></td>
+        </tr>`).join('')}
       </table>
     </div>` : '';
 
@@ -1038,7 +1117,14 @@ function renderRecord(r) {
         <div class="record-item-value" style="font-size:1.1rem;font-weight:600;">${store.meals || '—'}</div>
       </div>
       <div class="record-item"><div class="record-item-label">存款</div><div class="record-item-value">${fin.deposit ? '$'+Number(fin.deposit).toLocaleString() : '—'}</div></div>
-      <div class="record-item"><div class="record-item-label">支出帳款</div><div class="record-item-value">${fin.expense ? '$'+Number(fin.expense).toLocaleString() : '—'}</div></div>
+      <div class="record-item" style="border-left:2px solid var(--orange);padding-left:0.5rem">
+        <div class="record-item-label">派西夫支出</div>
+        <div class="record-item-value" style="color:var(--orange)">${fin.expensePassive !== undefined ? '$'+Number(fin.expensePassive).toLocaleString() : (fin.expense ? '$'+Number(fin.expense).toLocaleString() : '—')}</div>
+      </div>
+      <div class="record-item" style="border-left:2px solid var(--ink-mid);padding-left:0.5rem">
+        <div class="record-item-label">智域支出</div>
+        <div class="record-item-value">${fin.expenseIqrator ? '$'+Number(fin.expenseIqrator).toLocaleString() : '—'}</div>
+      </div>
       <div class="record-item"><div class="record-item-label">零用金餘額</div><div class="record-item-value">${fin.pettyCash ? '$'+Number(fin.pettyCash).toLocaleString() : '—'}</div></div>
     </div>
     ${purchaseTable}
