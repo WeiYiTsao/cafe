@@ -555,7 +555,24 @@
   </div>
 
   <div class="admin-toolbar">
-    <input type="month" id="filter-month" onchange="filterByMonth()">
+    <select id="filter-year" onchange="filterByMonth()" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:0.55rem 0.8rem;font-size:0.85rem;font-family:'Noto Sans TC',sans-serif;color:var(--ink);cursor:pointer;">
+      <option value="">全部年份</option>
+    </select>
+    <select id="filter-month-select" onchange="filterByMonth()" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:0.55rem 0.8rem;font-size:0.85rem;font-family:'Noto Sans TC',sans-serif;color:var(--ink);cursor:pointer;">
+      <option value="">全部月份</option>
+      <option value="01">1 月</option>
+      <option value="02">2 月</option>
+      <option value="03">3 月</option>
+      <option value="04">4 月</option>
+      <option value="05">5 月</option>
+      <option value="06">6 月</option>
+      <option value="07">7 月</option>
+      <option value="08">8 月</option>
+      <option value="09">9 月</option>
+      <option value="10">10 月</option>
+      <option value="11">11 月</option>
+      <option value="12">12 月</option>
+    </select>
     <button class="btn-secondary" onclick="clearFilter()">顯示全部</button>
     <input type="date" id="export-single-date" style="background:var(--surface);border:1px solid rgba(139,99,67,0.25);border-radius:8px;padding:0.55rem 0.8rem;font-size:0.85rem;font-family:'Noto Sans TC',sans-serif;color:var(--ink);">
     <button class="btn-secondary" onclick="exportSingleDay()" style="border-color:rgba(39,121,90,0.4);color:var(--green);">📄 匯出單日</button>
@@ -687,12 +704,14 @@ function exportSingleDay() {
 }
 
 function exportMonth() {
-  const month = document.getElementById('filter-month').value;
-  if (!month) { alert('請先在上方選擇月份篩選器'); return; }
-  const records = allRecords.filter(r => r.date && r.date.startsWith(month));
-  if (!records.length) { alert(`${month} 沒有記帳資料`); return; }
+  const year = document.getElementById('filter-year').value;
+  const month = document.getElementById('filter-month-select').value;
+  if (!year || !month) { alert('請先選擇年份和月份'); return; }
+  const prefix = `${year}-${month}`;
+  const records = allRecords.filter(r => r.date && r.date.startsWith(prefix));
+  if (!records.length) { alert(`${year} 年 ${parseInt(month)} 月 沒有記帳資料`); return; }
   const sorted = [...records].sort((a,b) => a.date.localeCompare(b.date));
-  downloadCSV(buildCSV(sorted), `派西夫咖啡_${month}.csv`);
+  downloadCSV(buildCSV(sorted), `派西夫咖啡_${prefix}.csv`);
 }
 
 // =================== DATES ===================
@@ -927,25 +946,58 @@ async function loadRecords() {
     const q = fb.query(fb.collection(fb.db, 'records'), fb.orderBy('date', 'desc'));
     fb.onSnapshot(q, snap => {
       allRecords = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      renderRecords(allRecords);
-      updateStats(allRecords);
+      buildYearOptions();
+      setDefaultMonthFilter();
     });
   } catch(e) {
     container.innerHTML = `<div class="empty-state"><div class="empty-icon">❌</div><p>${e.message}</p></div>`;
   }
 }
 
+function buildYearOptions() {
+  const years = [...new Set(allRecords.map(r => r.date?.substring(0,4)).filter(Boolean))].sort((a,b) => b-a);
+  const sel = document.getElementById('filter-year');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">全部年份</option>';
+  years.forEach(y => {
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = y + ' 年';
+    if (y === current) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  // 預設選當年
+  if (!current) {
+    const thisYear = new Date().getFullYear().toString();
+    if (years.includes(thisYear)) sel.value = thisYear;
+  }
+}
+
 function filterByMonth() {
-  const month = document.getElementById('filter-month').value;
-  if (!month) { renderRecords(allRecords); return; }
-  const filtered = allRecords.filter(r => r.date && r.date.startsWith(month));
+  const year = document.getElementById('filter-year').value;
+  const month = document.getElementById('filter-month-select').value;
+  let filtered = allRecords;
+  if (year) filtered = filtered.filter(r => r.date?.startsWith(year));
+  if (month) filtered = filtered.filter(r => r.date?.substring(5,7) === month);
   renderRecords(filtered);
   updateStats(filtered);
 }
+
 function clearFilter() {
-  document.getElementById('filter-month').value = '';
+  document.getElementById('filter-year').value = '';
+  document.getElementById('filter-month-select').value = '';
   renderRecords(allRecords);
   updateStats(allRecords);
+}
+
+function setDefaultMonthFilter() {
+  const now = new Date();
+  const thisYear = now.getFullYear().toString();
+  const thisMonth = String(now.getMonth() + 1).padStart(2, '0');
+  const yearSel = document.getElementById('filter-year');
+  const monthSel = document.getElementById('filter-month-select');
+  if ([...yearSel.options].some(o => o.value === thisYear)) yearSel.value = thisYear;
+  monthSel.value = thisMonth;
+  filterByMonth();
 }
 
 function updateStats(records) {
