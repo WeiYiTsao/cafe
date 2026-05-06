@@ -447,7 +447,7 @@
   <!-- 儲值寄杯 -->
   <div class="card">
     <div class="card-title"><span class="icon">🏷️</span>儲值 / 寄杯</div>
-    <div class="form-grid cols-3">
+    <div class="form-grid" style="margin-bottom:0.8rem">
       <div class="field">
         <label>寄杯使用點數</label>
         <input type="number" id="store-used" placeholder="0">
@@ -456,6 +456,8 @@
         <label>儲值金額</label>
         <input type="number" id="store-value" placeholder="0">
       </div>
+    </div>
+    <div class="form-grid">
       <div class="field">
         <label>出杯數</label>
         <input type="number" id="store-cups" placeholder="0">
@@ -480,10 +482,10 @@
         <input type="number" id="petty-income" placeholder="0" oninput="autoCalcFinance()">
       </div>
       <div class="field">
-        <label>今日存款（自動：實收現金－零用金收入）</label>
+        <label>今日存款</label>
         <input type="number" id="deposit" placeholder="自動計算" style="background:rgba(244,121,32,0.06);color:var(--orange);font-weight:500;" readonly>
       </div>
-      <div class="field">
+      <div class="field" style="grid-column:1/-1">
         <label>零用金餘額（自動）</label>
         <input type="number" id="petty-cash" placeholder="自動計算" style="background:rgba(244,121,32,0.06);color:var(--orange);font-weight:500;" readonly>
       </div>
