@@ -381,42 +381,65 @@
   <!-- 營收 -->
   <div class="card">
     <div class="card-title"><span class="icon">💰</span>今日營收</div>
-    <div class="form-grid cols-3">
-      <div class="field">
-        <label>營收總額（元）</label>
-        <input type="number" id="rev-total" placeholder="0">
+
+    <!-- 營收總額 -->
+    <div class="field" style="margin-bottom:1rem">
+      <label>營收總額（元）</label>
+      <input type="number" id="rev-total" placeholder="0">
+    </div>
+
+    <!-- 悠遊卡 -->
+    <div style="border:1px solid rgba(0,0,0,0.10);border-radius:10px;padding:0.9rem 1rem;margin-bottom:0.8rem;background:rgba(0,0,0,0.02);">
+      <div style="font-size:0.72rem;font-weight:600;color:var(--muted);letter-spacing:0.08em;margin-bottom:0.6rem;">🔵 悠遊卡</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>悠遊卡（元）</label>
+          <input type="number" id="rev-easycard" placeholder="0">
+        </div>
+        <div class="field">
+          <label>悠遊卡筆數</label>
+          <input type="number" id="rev-easycard-count" placeholder="0">
+        </div>
       </div>
-      <div class="field">
-        <label>悠遊卡（元）</label>
-        <input type="number" id="rev-easycard" placeholder="0">
+    </div>
+
+    <!-- 街口 -->
+    <div style="border:1px solid rgba(0,0,0,0.10);border-radius:10px;padding:0.9rem 1rem;margin-bottom:0.8rem;background:rgba(0,0,0,0.02);">
+      <div style="font-size:0.72rem;font-weight:600;color:var(--muted);letter-spacing:0.08em;margin-bottom:0.6rem;">🟡 街口支付</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>街口支付（元）</label>
+          <input type="number" id="rev-jkopay" placeholder="0">
+        </div>
+        <div class="field">
+          <label>街口筆數</label>
+          <input type="number" id="rev-jkopay-count" placeholder="0">
+        </div>
       </div>
-      <div class="field">
-        <label>悠遊卡筆數</label>
-        <input type="number" id="rev-easycard-count" placeholder="0">
-      </div>
-      <div class="field">
-        <label>街口支付（元）</label>
-        <input type="number" id="rev-jkopay" placeholder="0">
-      </div>
-      <div class="field">
-        <label>街口筆數</label>
-        <input type="number" id="rev-jkopay-count" placeholder="0">
-      </div>
-      <div class="field">
-        <label>FoodPanda（元）</label>
-        <input type="number" id="rev-panda" placeholder="0">
-      </div>
-      <div class="field">
-        <label>現金收入（元）</label>
-        <input type="number" id="rev-cash" placeholder="0">
-      </div>
-      <div class="field">
-        <label>實收現金（元）</label>
-        <input type="number" id="rev-cash-actual" placeholder="0">
-      </div>
-      <div class="field">
-        <label>溢收（元）</label>
-        <input type="number" id="rev-overflow" placeholder="0">
+    </div>
+
+    <!-- FoodPanda -->
+    <div class="field" style="margin-bottom:0.8rem">
+      <label>🐼 FoodPanda（元）</label>
+      <input type="number" id="rev-panda" placeholder="0">
+    </div>
+
+    <!-- 現金 -->
+    <div style="border:1px solid rgba(0,0,0,0.10);border-radius:10px;padding:0.9rem 1rem;background:rgba(0,0,0,0.02);">
+      <div style="font-size:0.72rem;font-weight:600;color:var(--muted);letter-spacing:0.08em;margin-bottom:0.6rem;">💵 現金</div>
+      <div class="form-grid cols-3">
+        <div class="field">
+          <label>現金收入（元）</label>
+          <input type="number" id="rev-cash" placeholder="0">
+        </div>
+        <div class="field">
+          <label>實收現金（元）</label>
+          <input type="number" id="rev-cash-actual" placeholder="0">
+        </div>
+        <div class="field">
+          <label>溢收（元）</label>
+          <input type="number" id="rev-overflow" placeholder="0">
+        </div>
       </div>
     </div>
   </div>
@@ -426,16 +449,16 @@
     <div class="card-title"><span class="icon">🏷️</span>儲值 / 寄杯</div>
     <div class="form-grid cols-3">
       <div class="field">
-        <label>儲值寄杯使用數</label>
+        <label>寄杯使用點數</label>
         <input type="number" id="store-used" placeholder="0">
-      </div>
-      <div class="field">
-        <label>出杯數</label>
-        <input type="number" id="store-cups" placeholder="0">
       </div>
       <div class="field">
         <label>儲值金額</label>
         <input type="number" id="store-value" placeholder="0">
+      </div>
+      <div class="field">
+        <label>出杯數</label>
+        <input type="number" id="store-cups" placeholder="0">
       </div>
       <div class="field">
         <label>出餐數</label>
@@ -447,7 +470,7 @@
   <!-- 存款 -->
   <div class="card">
     <div class="card-title"><span class="icon">🏦</span>存款 / 零用金</div>
-    <div class="form-grid cols-3">
+    <div class="form-grid cols-3" style="margin-bottom:1rem">
       <div class="field">
         <label>實收現金（元）</label>
         <input type="number" id="cash-actual-display" placeholder="自動帶入" style="background:rgba(244,121,32,0.06);color:var(--orange);font-weight:500;" readonly>
@@ -455,14 +478,6 @@
       <div class="field">
         <label>今日零用金收入（元）</label>
         <input type="number" id="petty-income" placeholder="0" oninput="autoCalcFinance()">
-      </div>
-      <div class="field">
-        <label>今日派西夫支出（元）</label>
-        <input type="number" id="expense-passive" placeholder="0" oninput="autoCalcFinance()">
-      </div>
-      <div class="field">
-        <label>今日智域支出（元）</label>
-        <input type="number" id="expense-iqrator" placeholder="0">
       </div>
       <div class="field">
         <label>今日存款（自動：實收現金－零用金收入）</label>
@@ -473,6 +488,21 @@
         <input type="number" id="petty-cash" placeholder="自動計算" style="background:rgba(244,121,32,0.06);color:var(--orange);font-weight:500;" readonly>
       </div>
     </div>
+
+    <!-- 支出區塊：顯眼警示 -->
+    <div style="border:2px solid rgba(192,57,43,0.35);border-radius:10px;padding:1rem 1.2rem;background:rgba(192,57,43,0.04);">
+      <div class="form-grid">
+        <div class="field">
+          <label style="color:#C0392B;font-weight:600;">🟠 派西夫支出（元）</label>
+          <input type="number" id="expense-passive" placeholder="0" oninput="autoCalcFinance()">
+        </div>
+        <div class="field">
+          <label style="color:#C0392B;font-weight:600;">⬛ 智域支出（元）</label>
+          <input type="number" id="expense-iqrator" placeholder="0">
+        </div>
+      </div>
+    </div>
+
     <div style="font-size:0.75rem;color:var(--muted);margin-top:0.6rem;padding:0.5rem 0.7rem;background:var(--light-gray);border-radius:6px;">
       💡 零用金餘額 ＝ 前日餘額 + 今日零用金收入 − 今日派西夫支出<br>
       💡 今日存款 ＝ 實收現金 − 今日零用金收入
