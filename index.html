@@ -7,26 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600&family=Kaisei+Opti:wght@400;700&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
 
-<!-- Firebase SDKs -->
-<script type="module">
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-  import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyDVC7q--cmOo3UxteYvvZaLauI53ccGPhQ",
-    authDomain: "passive-cafe.firebaseapp.com",
-    projectId: "passive-cafe",
-    storageBucket: "passive-cafe.firebasestorage.app",
-    messagingSenderId: "822955816181",
-    appId: "1:822955816181:web:ab1ce0f591941d386fc1bc",
-    measurementId: "G-WSZ6JS2VYP"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  window._firebase = { db, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot };
-</script>
+<!-- API Client -->
+<script src="api-client.js"></script>
 
 <style>
   :root {
@@ -645,7 +627,6 @@
 
 <script>
 // =================== PAGE SWITCH ===================
-// 🔐 請在這裡設定老闆密碼
 const ADMIN_PASSWORD = 'passive2026';
 
 function switchPage(name) {
@@ -662,12 +643,9 @@ function promptPassword() {
   document.getElementById('pw-error').style.display = 'none';
   setTimeout(() => document.getElementById('pw-input').focus(), 100);
 }
-function closePwModal() {
-  document.getElementById('pw-modal').style.display = 'none';
-}
+function closePwModal() { document.getElementById('pw-modal').style.display = 'none'; }
 function checkPassword() {
-  const val = document.getElementById('pw-input').value;
-  if (val === ADMIN_PASSWORD) {
+  if (document.getElementById('pw-input').value === ADMIN_PASSWORD) {
     closePwModal();
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -683,50 +661,43 @@ function checkPassword() {
 
 // =================== EXPORT ===================
 function recordToCSVRows(r) {
-  const rev = r.revenue || {};
-  const fin = r.finance || {};
-  const store = r.store || {};
+  const pos = r.pos || {};
+  const rec = r.record || {};
   const rows = [];
-  // Main row
   rows.push([
     r.date,
-    rev.total||0, rev.easycard||0, rev.easycardCount||0,
-    rev.jkopay||0, rev.jkopayCount||0, rev.panda||0,
-    rev.cash||0, rev.cashActual||0, rev.overflow||0,
-    store.used||0, store.cups||0, store.value||0,
-    fin.deposit||0, fin.expense||0, fin.pettyCash||0,
-    r.notes||''
+    pos.revenue||0, pos.easycard||0, pos.easycardCount||0,
+    pos.jkopay||0, pos.jkopayCount||0, pos.panda||0, pos.linepay||0,
+    pos.memberPoints||0, pos.cash||0,
+    rec.cashActual||0, rec.overflow||0,
+    pos.cups||0, pos.meals||0,
+    rec.storeUsed||0, rec.storeValue||0,
+    rec.deposit||0, rec.expensePassive||0, rec.expenseIqrator||0,
+    rec.pettyCash||0, rec.notes||''
   ].map(v => `"${v}"`).join(','));
-  // Purchase rows
   (r.purchases||[]).forEach(p => {
-    rows.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
-      `"${p.item||''}"`, `"${p.price||''}"`, `"${p.qty||''}"`, `"${p.amount||''}"`, `"${p.supplier||''}"`
+    rows.push(['','','','','','','','','','','','','','','','','','',
+      `"${p.item||''}"`,`"${p.price||''}"`,`"${p.qty||''}"`,`"${p.amount||''}"`,`"${p.supplier||''}"`
     ].join(','));
   });
   return rows.join('\n');
 }
-
 function downloadCSV(content, filename) {
-  const BOM = '\uFEFF';
-  const blob = new Blob([BOM + content], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = filename;
   a.click();
 }
-
 function buildCSV(records) {
   const header = [
-    '日期','營收總額','悠遊卡','悠遊卡筆數','街口','街口筆數','FoodPanda',
-    '現金收入','實收現金','溢收',
-    '儲值使用數','出杯數','儲值金額',
-    '存款','支出','零用金餘額','備註',
+    '日期','營收總額','悠遊卡','悠遊卡筆數','街口','街口筆數','FoodPanda','LINE Pay',
+    '會員點數','現金收入','實收現金','溢收','出杯數','出餐數',
+    '寄杯點數','儲值金額','存款','派西夫支出','智域支出','零用金餘額','備註',
     '進貨品項','單價','數量','金額','廠商'
-  ].map(h => `"${h}"`).join(',');
-  const rows = records.map(r => recordToCSVRows(r)).join('\n');
-  return header + '\n' + rows;
+  ].map(h=>`"${h}"`).join(',');
+  return header + '\n' + records.map(r => recordToCSVRows(r)).join('\n');
 }
-
 function exportSingleDay() {
   const date = document.getElementById('export-single-date').value;
   if (!date) { alert('請先選擇要匯出的日期'); return; }
@@ -734,7 +705,6 @@ function exportSingleDay() {
   if (!records.length) { alert(`${formatDate(date)} 沒有記帳資料`); return; }
   downloadCSV(buildCSV(records), `派西夫咖啡_${date}.csv`);
 }
-
 function exportMonth() {
   const year = document.getElementById('filter-year').value;
   const month = document.getElementById('filter-month-select').value;
@@ -742,14 +712,11 @@ function exportMonth() {
   const prefix = `${year}-${month}`;
   const records = allRecords.filter(r => r.date && r.date.startsWith(prefix));
   if (!records.length) { alert(`${year} 年 ${parseInt(month)} 月 沒有記帳資料`); return; }
-  const sorted = [...records].sort((a,b) => a.date.localeCompare(b.date));
-  downloadCSV(buildCSV(sorted), `派西夫咖啡_${prefix}.csv`);
+  downloadCSV(buildCSV([...records].sort((a,b) => a.date.localeCompare(b.date))), `派西夫咖啡_${prefix}.csv`);
 }
 
 // =================== DATES ===================
-function todayStr() {
-  return new Date().toISOString().split('T')[0];
-}
+function todayStr() { return new Date().toISOString().split('T')[0]; }
 function formatDate(str) {
   if (!str) return '';
   const d = new Date(str + 'T00:00:00');
@@ -765,11 +732,8 @@ let purchaseCount = 0;
 function addPurchaseRow(data={}) {
   purchaseCount++;
   const id = purchaseCount;
-  const list = document.getElementById('purchase-list');
   const row = document.createElement('div');
-  row.className = 'purchase-row';
-  row.id = 'pur-' + id;
-  // 7 columns now: item, price, qty, amount, supplier, owner, delete
+  row.className = 'purchase-row'; row.id = 'pur-' + id;
   row.style.gridTemplateColumns = '2fr 1fr 1fr 1fr 1.2fr 1fr auto';
   row.innerHTML = `
     <div class="field"><label>品項</label><input type="text" id="pur-item-${id}" value="${data.item||''}" placeholder="品項名稱"></div>
@@ -783,72 +747,25 @@ function addPurchaseRow(data={}) {
         <option value="智域" ${data.owner==='智域'?'selected':''}>智域</option>
       </select>
     </div>
-    <button class="btn-icon" onclick="removePurchaseRow(${id})">✕</button>
-  `;
-  list.appendChild(row);
+    <button class="btn-icon" onclick="removePurchaseRow(${id})">✕</button>`;
+  document.getElementById('purchase-list').appendChild(row);
 }
 function calcAmount(id) {
-  const price = parseFloat(document.getElementById('pur-price-'+id)?.value) || 0;
-  const qty = parseFloat(document.getElementById('pur-qty-'+id)?.value) || 0;
-  const amt = document.getElementById('pur-amt-'+id);
-  if (amt) amt.value = price && qty ? price * qty : '';
+  const price = parseFloat(document.getElementById('pur-price-'+id)?.value)||0;
+  const qty   = parseFloat(document.getElementById('pur-qty-'+id)?.value)||0;
+  const amt   = document.getElementById('pur-amt-'+id);
+  if (amt) amt.value = price&&qty ? price*qty : '';
 }
-
-// =================== AUTO CALC FINANCE ===================
-// 從營運後台取得前一天零用金餘額
-let prevPettyCash = 0;
-async function loadPrevPettyCash() {
-  const fb = window._firebase;
-  if (!fb) return;
-  try {
-    const today = document.getElementById('record-date').value;
-    const q = fb.query(fb.collection(fb.db, 'records'), fb.orderBy('date', 'desc'));
-    const snap = await fb.getDocs(q);
-    for (const d of snap.docs) {
-      const r = d.data();
-      if (r.date && r.date < today) {
-        prevPettyCash = r.finance?.pettyCash || 0;
-        break;
-      }
-    }
-    autoCalcFinance();
-  } catch(e) {}
-}
-function autoCalcFinance() {
-  const cashActual = parseFloat(document.getElementById('rev-cash-actual')?.value) || 0;
-  const pettycomeIncome = parseFloat(document.getElementById('petty-income')?.value) || 0;
-  const passiveExp = parseFloat(document.getElementById('expense-passive')?.value) || 0;
-  // 同步顯示實收現金
-  const display = document.getElementById('cash-actual-display');
-  if (display) display.value = cashActual || '';
-  // 今日存款 = 實收現金 - 零用金收入
-  const deposit = cashActual - pettycomeIncome;
-  document.getElementById('deposit').value = deposit >= 0 ? deposit : 0;
-  // 零用金餘額 = 前日餘額 + 今日零用金收入 - 今日派西夫支出
-  const pettyCash = prevPettyCash + pettycomeIncome - passiveExp;
-  document.getElementById('petty-cash').value = pettyCash;
-}
-// 當實收現金改變時也觸發
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('rev-cash-actual')?.addEventListener('input', autoCalcFinance);
-  document.getElementById('record-date')?.addEventListener('change', loadPrevPettyCash);
-  loadPrevPettyCash();
-});
-function removePurchaseRow(id) {
-  document.getElementById('pur-' + id)?.remove();
-}
+function removePurchaseRow(id) { document.getElementById('pur-'+id)?.remove(); }
 function getPurchaseData() {
-  const rows = document.querySelectorAll('[id^="pur-"]');
-  return Array.from(rows).map(r => {
+  return Array.from(document.querySelectorAll('[id^="pur-"]')).map(r => {
     const id = r.id.replace('pur-','');
-    return {
-      item: document.getElementById('pur-item-'+id)?.value || '',
-      price: document.getElementById('pur-price-'+id)?.value || '',
-      qty: document.getElementById('pur-qty-'+id)?.value || '',
-      amount: document.getElementById('pur-amt-'+id)?.value || '',
-      supplier: document.getElementById('pur-sup-'+id)?.value || '',
-      owner: document.getElementById('pur-owner-'+id)?.value || '派西夫',
-    };
+    return { item: document.getElementById('pur-item-'+id)?.value||'',
+             price: parseFloat(document.getElementById('pur-price-'+id)?.value)||0,
+             qty:   parseFloat(document.getElementById('pur-qty-'+id)?.value)||0,
+             amount: parseFloat(document.getElementById('pur-amt-'+id)?.value)||0,
+             supplier: document.getElementById('pur-sup-'+id)?.value||'',
+             owner: document.getElementById('pur-owner-'+id)?.value||'派西夫' };
   }).filter(r => r.item);
 }
 
@@ -857,199 +774,294 @@ let inventoryCount = 0;
 function addInventoryRow(data={}) {
   inventoryCount++;
   const id = inventoryCount;
-  const list = document.getElementById('inventory-list');
   const row = document.createElement('div');
-  row.className = 'purchase-row';
-  row.id = 'inv-' + id;
+  row.className = 'purchase-row'; row.id = 'inv-'+id;
   row.innerHTML = `
     <div class="field"><label>類別</label><input type="text" id="inv-cat-${id}" value="${data.category||''}" placeholder="飲品/食材…"></div>
     <div class="field"><label>品項</label><input type="text" id="inv-item-${id}" value="${data.item||''}" placeholder="品項"></div>
     <div class="field"><label>數量</label><input type="text" id="inv-qty-${id}" value="${data.qty||''}" placeholder="數量"></div>
     <div class="field purchase-unit"><label>單位</label><input type="text" id="inv-unit-${id}" value="${data.unit||''}" placeholder="瓶/磅…"></div>
     <div class="field purchase-supplier"><label>備註</label><input type="text" id="inv-note-${id}" value="${data.note||''}" placeholder="備註"></div>
-    <button class="btn-icon" onclick="removeInventoryRow(${id})">✕</button>
-  `;
-  list.appendChild(row);
+    <button class="btn-icon" onclick="removeInventoryRow(${id})">✕</button>`;
+  document.getElementById('inventory-list').appendChild(row);
 }
-function removeInventoryRow(id) { document.getElementById('inv-' + id)?.remove(); }
+function removeInventoryRow(id) { document.getElementById('inv-'+id)?.remove(); }
 function getInventoryData() {
-  const rows = document.querySelectorAll('[id^="inv-"]');
-  return Array.from(rows).map(r => {
+  return Array.from(document.querySelectorAll('[id^="inv-"]')).map(r => {
     const id = r.id.replace('inv-','');
-    return {
-      category: document.getElementById('inv-cat-'+id)?.value || '',
-      item: document.getElementById('inv-item-'+id)?.value || '',
-      qty: document.getElementById('inv-qty-'+id)?.value || '',
-      unit: document.getElementById('inv-unit-'+id)?.value || '',
-      note: document.getElementById('inv-note-'+id)?.value || '',
-    };
+    return { category: document.getElementById('inv-cat-'+id)?.value||'',
+             item: document.getElementById('inv-item-'+id)?.value||'',
+             qty:  document.getElementById('inv-qty-'+id)?.value||'',
+             unit: document.getElementById('inv-unit-'+id)?.value||'',
+             note: document.getElementById('inv-note-'+id)?.value||'' };
   }).filter(r => r.item);
 }
 
-// Init default rows
+// 初始進貨/庫存列
 addPurchaseRow();
-addInventoryRow({ category: '咖啡豆', item: '莎荷配方豆', qty: '', unit: '磅' });
-addInventoryRow({ category: '牛奶', item: '光泉鮮奶', qty: '', unit: '瓶' });
+addInventoryRow({ category:'咖啡豆', item:'莎荷配方豆', qty:'', unit:'磅' });
+addInventoryRow({ category:'牛奶', item:'光泉鮮奶', qty:'', unit:'瓶' });
+
+// =================== AUTO CALC FINANCE ===================
+let prevPettyCash = 0;
+async function loadPrevPettyCash() {
+  try {
+    const today = document.getElementById('record-date').value;
+    if (!today) return;
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yStr = yesterday.toISOString().split('T')[0];
+    const res = await API.daily(yStr);
+    if (res.isSuccess && res.data?.record) {
+      prevPettyCash = res.data.record.pettyCash || 0;
+    }
+    autoCalcFinance();
+  } catch(e) {}
+}
+
+function autoCalcFinance() {
+  const cashActual   = parseFloat(document.getElementById('rev-cash-actual')?.value)||0;
+  const pettyIncome  = parseFloat(document.getElementById('petty-income')?.value)||0;
+  const passiveExp   = parseFloat(document.getElementById('expense-passive')?.value)||0;
+  const display = document.getElementById('cash-actual-display');
+  if (display) display.value = cashActual||'';
+  document.getElementById('deposit').value   = Math.max(0, cashActual - pettyIncome);
+  document.getElementById('petty-cash').value = prevPettyCash + pettyIncome - passiveExp;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('rev-cash-actual')?.addEventListener('input', autoCalcFinance);
+  document.getElementById('record-date')?.addEventListener('change', () => {
+    loadPrevPettyCash();
+    checkPosImport();
+  });
+  loadPrevPettyCash();
+  checkPosImport();
+});
+
+// =================== POS 匯入狀態 ===================
+const POS_LOCKED_FIELDS = [
+  'rev-total','rev-easycard','rev-easycard-count',
+  'rev-jkopay','rev-jkopay-count','rev-panda',
+  'rev-linepay','rev-linepay-count',
+  'rev-member-points','rev-member-points-count',
+  'rev-cash','store-cups','store-meals'
+];
+
+async function checkPosImport() {
+  const date = document.getElementById('record-date').value;
+  if (!date) return;
+  try {
+    const res = await API.daily(date);
+    if (res.isSuccess && res.data) {
+      const d = res.data;
+      if (d.pos && d.pos.ticketCount > 0) {
+        applyPosData(d.pos);
+        lockPosFields(true);
+        showPosBanner(true);
+      } else {
+        lockPosFields(false);
+        showPosBanner(false);
+      }
+      if (d.hasRecord && d.record) applyRecordData(d.record);
+      if (d.purchases?.length)   populatePurchases(d.purchases);
+      if (d.inventories?.length) populateInventories(d.inventories);
+    }
+  } catch(e) {}
+}
+
+function applyPosData(pos) {
+  const set = (id, val) => { const el=document.getElementById(id); if(el) el.value=val??''; };
+  set('rev-total',               pos.revenue);
+  set('rev-easycard',            pos.easycard);
+  set('rev-easycard-count',      pos.easycardCount);
+  set('rev-jkopay',              pos.jkopay);
+  set('rev-jkopay-count',        pos.jkopayCount);
+  set('rev-panda',               pos.panda);
+  set('rev-linepay',             pos.linepay);
+  set('rev-linepay-count',       pos.linepayCount);
+  set('rev-member-points',       pos.memberPoints);
+  set('rev-member-points-count', pos.memberPointsCount);
+  set('rev-cash',                pos.cash);
+  set('store-cups',              pos.cups);
+  set('store-meals',             pos.meals);
+  autoCalcFinance();
+}
+
+function applyRecordData(rec) {
+  const set = (id, val) => { const el=document.getElementById(id); if(el&&val!==undefined) el.value=val; };
+  set('rev-cash-actual',  rec.cashActual);
+  set('rev-overflow',     rec.overflow);
+  set('store-used',       rec.storeUsed);
+  set('store-value',      rec.storeValue);
+  set('petty-income',     rec.pettyIncome);
+  set('expense-passive',  rec.expensePassive);
+  set('expense-iqrator',  rec.expenseIqrator);
+  set('notes',            rec.notes);
+  autoCalcFinance();
+}
+
+function populatePurchases(purchases) {
+  document.getElementById('purchase-list').innerHTML = '';
+  purchaseCount = 0;
+  purchases.forEach(p => addPurchaseRow(p));
+}
+function populateInventories(inventories) {
+  document.getElementById('inventory-list').innerHTML = '';
+  inventoryCount = 0;
+  inventories.forEach(iv => addInventoryRow(iv));
+}
+
+function lockPosFields(lock) {
+  POS_LOCKED_FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.readOnly = lock;
+    el.style.background = lock ? 'rgba(39,121,90,0.06)' : '';
+    el.style.color = lock ? 'var(--green)' : '';
+  });
+}
+
+function showPosBanner(show) {
+  const banner  = document.getElementById('pos-import-banner');
+  const pending = document.getElementById('pos-pending-banner');
+  if (banner)  banner.style.display  = show ? 'flex' : 'none';
+  if (pending) pending.style.display = show ? 'none' : 'flex';
+}
 
 // =================== SUBMIT ===================
 async function submitRecord() {
-  const btn = document.getElementById('submit-btn');
+  const btn    = document.getElementById('submit-btn');
   const status = document.getElementById('submit-status');
-  const fb = window._firebase;
-
-  if (!fb) {
-    showStatus(status, '⚠️ Firebase 尚未設定，請先填入 firebaseConfig', 'error');
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = '儲存中…';
-
+  btn.disabled = true; btn.textContent = '儲存中…';
   try {
     const date = document.getElementById('record-date').value;
-
-    const data = {
-      date,
-      revenue: {
-        total: num('rev-total'),
-        easycard: num('rev-easycard'),
-        easycardCount: num('rev-easycard-count'),
-        jkopay: num('rev-jkopay'),
-        jkopayCount: num('rev-jkopay-count'),
-        panda: num('rev-panda'),
-        cash: num('rev-cash'),
-        cashActual: num('rev-cash-actual'),
-        overflow: num('rev-overflow'),
-      },
-      store: {
-        used: num('store-used'),
-        cups: num('store-cups'),
-        value: num('store-value'),
-        meals: num('store-meals'),
-      },
-      finance: {
-        deposit: num('deposit'),
-        expense: num('expense-passive') + num('expense-iqrator'),
-        expensePassive: num('expense-passive'),
-        expenseIqrator: num('expense-iqrator'),
-        pettyCash: num('petty-cash'),
-        pettyIncome: num('petty-income'),
-      },
-      purchases: getPurchaseData(),
-      inventory: getInventoryData(),
-      notes: document.getElementById('notes').value,
-      createdAt: new Date().toISOString(),
+    const record = {
+      cashActual:     num('rev-cash-actual'),
+      overflow:       num('rev-overflow'),
+      storeUsed:      num('store-used'),
+      storeValue:     num('store-value'),
+      pettyIncome:    num('petty-income'),
+      expensePassive: num('expense-passive'),
+      expenseIqrator: num('expense-iqrator'),
+      expense:        num('expense-passive') + num('expense-iqrator'),
+      deposit:        num('deposit'),
+      pettyCash:      num('petty-cash'),
+      notes:          document.getElementById('notes').value,
     };
-
-    await fb.addDoc(fb.collection(fb.db, 'records'), data);
-    showStatus(status, '✅ 今日帳目已儲存！', 'success');
-    btn.textContent = '✅ 已儲存';
-  } catch (e) {
+    const res = await API.saveRecord(date, record, getPurchaseData(), getInventoryData());
+    if (res.isSuccess) {
+      showStatus(status, '✅ 今日帳目已儲存！', 'success');
+      btn.textContent = '✅ 已儲存';
+    } else { throw new Error(res.message); }
+  } catch(e) {
     showStatus(status, '❌ 儲存失敗：' + e.message, 'error');
-    btn.disabled = false;
-    btn.textContent = '儲存今日帳目';
+    btn.disabled = false; btn.textContent = '儲存今日帳目';
   }
 }
 
-function num(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
-function val(id) { return document.getElementById(id)?.value || ''; }
-
+function num(id) { return parseFloat(document.getElementById(id)?.value)||0; }
 function showStatus(el, msg, type) {
-  el.textContent = msg;
-  el.className = 'status-msg ' + type;
-  el.style.display = 'block';
+  el.textContent = msg; el.className = 'status-msg ' + type; el.style.display = 'block';
   setTimeout(() => { el.style.display = 'none'; }, 5000);
 }
 
 // =================== ADMIN LOAD ===================
 let allRecords = [];
-let editingId = null;
+let editingId  = null;
 
-async function loadRecords() {
-  const fb = window._firebase;
+// 載入指定月份的資料（year-month: "2026-05"）
+// 若沒帶參數，預設載入當月
+async function loadRecords(yearMonth) {
   const container = document.getElementById('records-container');
-  if (!fb) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-icon">⚙️</div><p>請先設定 Firebase 設定</p></div>';
-    return;
-  }
   container.innerHTML = '<div class="loading">載入中…</div>';
 
+  // 預設當月
+  if (!yearMonth) {
+    const now = new Date();
+    yearMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  }
+
   try {
-    const q = fb.query(fb.collection(fb.db, 'records'), fb.orderBy('date', 'desc'));
-    fb.onSnapshot(q, snap => {
-      allRecords = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      buildYearOptions();
-      setDefaultMonthFilter();
-    });
+    // 一次撈整月所有資料（POS + 手動記帳 + 進貨 + 庫存）
+    const res = await fetch(`http://127.0.0.1:5000/api/month-detail?month=${yearMonth}`)
+      .then(r => r.json())
+      .catch(() => ({ isSuccess: false, message: '網路連線失敗' }));
+
+    if (!res.isSuccess) {
+      container.innerHTML = `<div class="empty-state"><div class="empty-icon">❌</div><p>${res.message||'載入失敗'}</p></div>`;
+      return;
+    }
+
+    allRecords = (res.data.days || [])
+      .filter(d => d.hasRecord || d.pos?.ticketCount > 0)
+      .sort((a, b) => b.date.localeCompare(a.date));
+
+    // 設定篩選器（固定年份選單）並渲染
+    buildYearOptions();
+    setFilterToMonth(yearMonth);
+    renderRecords(allRecords);
+    updateStats(allRecords);
   } catch(e) {
     container.innerHTML = `<div class="empty-state"><div class="empty-icon">❌</div><p>${e.message}</p></div>`;
   }
 }
 
+// 固定年份選單（不依賴資料），預設顯示近 3 年
 function buildYearOptions() {
-  const years = [...new Set(allRecords.map(r => r.date?.substring(0,4)).filter(Boolean))].sort((a,b) => b-a);
   const sel = document.getElementById('filter-year');
-  const current = sel.value;
+  if (sel.options.length > 1) return; // 已建立過就不重建
+  const thisYear = new Date().getFullYear();
   sel.innerHTML = '<option value="">全部年份</option>';
-  years.forEach(y => {
+  for (let y = thisYear; y >= thisYear - 2; y--) {
     const opt = document.createElement('option');
-    opt.value = y; opt.textContent = y + ' 年';
-    if (y === current) opt.selected = true;
+    opt.value = String(y);
+    opt.textContent = y + ' 年';
     sel.appendChild(opt);
-  });
-  // 預設選當年
-  if (!current) {
-    const thisYear = new Date().getFullYear().toString();
-    if (years.includes(thisYear)) sel.value = thisYear;
   }
 }
 
+// 把篩選器設定為指定月份（不觸發 API）
+function setFilterToMonth(yearMonth) {
+  const [y, m] = yearMonth.split('-');
+  document.getElementById('filter-year').value = y;
+  document.getElementById('filter-month-select').value = m;
+}
+
+// 篩選器變動時觸發：重新呼叫 API 撈該月資料
 function filterByMonth() {
-  const year = document.getElementById('filter-year').value;
+  const year  = document.getElementById('filter-year').value;
   const month = document.getElementById('filter-month-select').value;
-  let filtered = allRecords;
-  if (year) filtered = filtered.filter(r => r.date?.startsWith(year));
-  if (month) filtered = filtered.filter(r => r.date?.substring(5,7) === month);
-  renderRecords(filtered);
-  updateStats(filtered);
+  if (!year || !month) return; // 年或月任一沒選就不動作
+  loadRecords(`${year}-${month}`);
 }
 
+// 清除篩選 → 回到當月
 function clearFilter() {
-  document.getElementById('filter-year').value = '';
-  document.getElementById('filter-month-select').value = '';
-  renderRecords(allRecords);
-  updateStats(allRecords);
+  loadRecords();
 }
 
+// 預設當月（保留函式名以維持相容性）
 function setDefaultMonthFilter() {
   const now = new Date();
-  const thisYear = now.getFullYear().toString();
-  const thisMonth = String(now.getMonth() + 1).padStart(2, '0');
-  const yearSel = document.getElementById('filter-year');
-  const monthSel = document.getElementById('filter-month-select');
-  if ([...yearSel.options].some(o => o.value === thisYear)) yearSel.value = thisYear;
-  monthSel.value = thisMonth;
-  filterByMonth();
+  const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  loadRecords(ym);
 }
 
 function updateStats(records) {
-  const rev = records.reduce((s,r) => s + (r.revenue?.total||0), 0);
-  const dep = records.reduce((s,r) => s + (r.finance?.deposit||0), 0);
-  const expPassive = records.reduce((s,r) => {
-    const fin = r.finance || {};
-    // 若有獨立欄位就用，否則不計入（避免混用舊資料）
-    return s + (fin.expensePassive !== undefined ? fin.expensePassive : 0);
-  }, 0);
-  const expIqrator = records.reduce((s,r) => s + (r.finance?.expenseIqrator||0), 0);
-  const cups = records.reduce((s,r) => s + (r.store?.cups||0), 0);
-  const meals = records.reduce((s,r) => s + (r.store?.meals||0), 0);
-  document.getElementById('stat-revenue').textContent = '$' + rev.toLocaleString();
-  document.getElementById('stat-deposit').textContent = '$' + dep.toLocaleString();
-  document.getElementById('stat-expense').textContent = '$' + expPassive.toLocaleString();
-  document.getElementById('stat-expense-iq').textContent = '$' + expIqrator.toLocaleString();
-  document.getElementById('stat-days').textContent = records.length + ' 天';
-  document.getElementById('stat-cups').textContent = cups.toLocaleString();
-  document.getElementById('stat-meals').textContent = meals.toLocaleString();
+  const rev        = records.reduce((s,r) => s+(r.pos?.revenue||0), 0);
+  const dep        = records.reduce((s,r) => s+(r.record?.deposit||0), 0);
+  const expPassive = records.reduce((s,r) => s+(r.record?.expensePassive||0), 0);
+  const expIqrator = records.reduce((s,r) => s+(r.record?.expenseIqrator||0), 0);
+  const cups       = records.reduce((s,r) => s+(r.pos?.cups||0), 0);
+  const meals      = records.reduce((s,r) => s+(r.pos?.meals||0), 0);
+  document.getElementById('stat-revenue').textContent    = '$'+rev.toLocaleString();
+  document.getElementById('stat-deposit').textContent    = '$'+dep.toLocaleString();
+  document.getElementById('stat-expense').textContent    = '$'+expPassive.toLocaleString();
+  document.getElementById('stat-expense-iq').textContent = '$'+expIqrator.toLocaleString();
+  document.getElementById('stat-days').textContent       = records.length+' 天';
+  document.getElementById('stat-cups').textContent       = cups.toLocaleString();
+  document.getElementById('stat-meals').textContent      = meals.toLocaleString();
 }
 
 function renderRecords(records) {
@@ -1062,122 +1074,94 @@ function renderRecords(records) {
 }
 
 function renderRecord(r) {
-  const isEditing = editingId === r.id;
-  const rev = r.revenue || {};
-  const fin = r.finance || {};
-  const store = r.store || {};
+  const isEditing = editingId === r.date;
+  const pos   = r.pos    || {};
+  const rec   = r.record || {};
+  const purs  = r.purchases   || [];
+  const invs  = r.inventories || [];
 
-  // ---- VIEW MODE ----
-  const purchaseTable = r.purchases?.length ? `
+  const purchaseTable = purs.length ? `
     <div style="margin-top:0.8rem">
       <div class="photo-label">📦 進貨記錄</div>
       <table class="purchase-table">
         <tr><th>品項</th><th>單價</th><th>數量</th><th>金額</th><th>廠商</th><th>歸屬</th></tr>
-        ${r.purchases.map(p => `<tr>
+        ${purs.map(p=>`<tr>
           <td>${p.item}</td><td>${p.price||'—'}</td><td>${p.qty||'—'}</td>
-          <td>${p.amount ? '$'+p.amount : '—'}</td><td>${p.supplier||'—'}</td>
+          <td>${p.amount?'$'+p.amount:'—'}</td><td>${p.supplier||'—'}</td>
           <td><span style="font-size:0.75rem;padding:0.15rem 0.5rem;border-radius:4px;background:${p.owner==='智域'?'rgba(26,20,16,0.08)':'rgba(244,121,32,0.10)'};color:${p.owner==='智域'?'var(--ink-mid)':'var(--orange)'};">${p.owner||'派西夫'}</span></td>
         </tr>`).join('')}
       </table>
     </div>` : '';
 
-  const inventoryTable = r.inventory?.length ? `
+  const inventoryTable = invs.length ? `
     <div style="margin-top:0.8rem">
       <div class="photo-label">🗄️ 庫存</div>
       <table class="purchase-table">
         <tr><th>類別</th><th>品項</th><th>數量</th><th>單位</th></tr>
-        ${r.inventory.map(i => `<tr><td>${i.category||'—'}</td><td>${i.item}</td><td>${i.qty||'—'}</td><td>${i.unit||'—'}</td></tr>`).join('')}
+        ${invs.map(i=>`<tr><td>${i.category||'—'}</td><td>${i.item}</td><td>${i.qty||'—'}</td><td>${i.unit||'—'}</td></tr>`).join('')}
       </table>
     </div>` : '';
 
-  const noteHtml = r.notes ? `<div class="record-note">📝 ${r.notes}</div>` : '';
+  const noteHtml = rec.notes ? `<div class="record-note">📝 ${rec.notes}</div>` : '';
 
-  // ---- EDIT MODE ----
   const ef = (label, val, eid) =>
-    `<div class="field"><label>${label}</label><input type="number" id="e-${eid}-${r.id}" value="${val||0}"></div>`;
+    `<div class="field"><label>${label}</label><input type="number" id="e-${eid}-${r.date}" value="${val||0}"></div>`;
 
-  const editPurchaseRows = (r.purchases||[]).map((p,i) => `
-    <div class="purchase-row" id="epur-row-${r.id}-${i}" style="grid-template-columns:2fr 1fr 1fr 1fr 1.2fr 1fr auto">
-      <div class="field"><label>品項</label><input type="text" id="epur-item-${r.id}-${i}" value="${p.item||''}"></div>
-      <div class="field"><label>單價</label><input type="number" id="epur-price-${r.id}-${i}" value="${p.price||''}" oninput="eCalcAmt('${r.id}',${i})"></div>
-      <div class="field"><label>數量</label><input type="number" id="epur-qty-${r.id}-${i}" value="${p.qty||''}" oninput="eCalcAmt('${r.id}',${i})"></div>
-      <div class="field"><label>金額</label><input type="number" id="epur-amt-${r.id}-${i}" value="${p.amount||''}" style="background:rgba(244,121,32,0.06);color:var(--orange);" readonly></div>
-      <div class="field purchase-supplier"><label>廠商</label><input type="text" id="epur-sup-${r.id}-${i}" value="${p.supplier||''}"></div>
+  const editPurchaseRows = purs.map((p,i)=>`
+    <div class="purchase-row" id="epur-row-${r.date}-${i}" style="grid-template-columns:2fr 1fr 1fr 1fr 1.2fr 1fr auto">
+      <div class="field"><label>品項</label><input type="text" id="epur-item-${r.date}-${i}" value="${p.item||''}"></div>
+      <div class="field"><label>單價</label><input type="number" id="epur-price-${r.date}-${i}" value="${p.price||''}" oninput="eCalcAmt('${r.date}',${i})"></div>
+      <div class="field"><label>數量</label><input type="number" id="epur-qty-${r.date}-${i}" value="${p.qty||''}" oninput="eCalcAmt('${r.date}',${i})"></div>
+      <div class="field"><label>金額</label><input type="number" id="epur-amt-${r.date}-${i}" value="${p.amount||''}" style="background:rgba(244,121,32,0.06);color:var(--orange);" readonly></div>
+      <div class="field purchase-supplier"><label>廠商</label><input type="text" id="epur-sup-${r.date}-${i}" value="${p.supplier||''}"></div>
       <div class="field"><label>歸屬</label>
-        <select id="epur-owner-${r.id}-${i}" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.5rem;font-size:0.85rem;font-family:'Noto Sans TC',sans-serif;color:var(--ink);">
+        <select id="epur-owner-${r.date}-${i}" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.5rem;font-size:0.85rem;font-family:'Noto Sans TC',sans-serif;">
           <option value="派西夫" ${(p.owner||'派西夫')==='派西夫'?'selected':''}>派西夫</option>
           <option value="智域" ${p.owner==='智域'?'selected':''}>智域</option>
         </select>
       </div>
-      <button class="btn-icon" onclick="eRemovePur('${r.id}',${i})">✕</button>
+      <button class="btn-icon" onclick="eRemovePur('${r.date}',${i})">✕</button>
     </div>`).join('');
 
-  const editInvRows = (r.inventory||[]).map((iv,i) => `
-    <div class="purchase-row" id="einv-row-${r.id}-${i}">
-      <div class="field"><label>類別</label><input type="text" id="einv-cat-${r.id}-${i}" value="${iv.category||''}"></div>
-      <div class="field"><label>品項</label><input type="text" id="einv-item-${r.id}-${i}" value="${iv.item||''}"></div>
-      <div class="field"><label>數量</label><input type="text" id="einv-qty-${r.id}-${i}" value="${iv.qty||''}"></div>
-      <div class="field purchase-unit"><label>單位</label><input type="text" id="einv-unit-${r.id}-${i}" value="${iv.unit||''}"></div>
-      <div class="field purchase-supplier"><label>備註</label><input type="text" id="einv-note-${r.id}-${i}" value="${iv.note||''}"></div>
-      <button class="btn-icon" onclick="eRemoveInv('${r.id}',${i})">✕</button>
+  const editInvRows = invs.map((iv,i)=>`
+    <div class="purchase-row" id="einv-row-${r.date}-${i}">
+      <div class="field"><label>類別</label><input type="text" id="einv-cat-${r.date}-${i}" value="${iv.category||''}"></div>
+      <div class="field"><label>品項</label><input type="text" id="einv-item-${r.date}-${i}" value="${iv.item||''}"></div>
+      <div class="field"><label>數量</label><input type="text" id="einv-qty-${r.date}-${i}" value="${iv.qty||''}"></div>
+      <div class="field purchase-unit"><label>單位</label><input type="text" id="einv-unit-${r.date}-${i}" value="${iv.unit||''}"></div>
+      <div class="field purchase-supplier"><label>備註</label><input type="text" id="einv-note-${r.date}-${i}" value="${iv.note||''}"></div>
+      <button class="btn-icon" onclick="eRemoveInv('${r.date}',${i})">✕</button>
     </div>`).join('');
 
   const editForm = `
     <div style="margin-top:1rem;border-top:1px dashed rgba(139,99,67,0.2);padding-top:1rem;">
-      <div style="font-size:0.78rem;font-weight:500;color:var(--brown-light);margin-bottom:0.8rem;letter-spacing:0.04em;">📅 日期</div>
-      <div class="form-grid" style="margin-bottom:1rem">
-        <div class="field"><label>日期</label><input type="date" id="e-date-${r.id}" value="${r.date||''}"></div>
-      </div>
-
-      <div style="font-size:0.78rem;font-weight:500;color:var(--brown-light);margin-bottom:0.8rem;letter-spacing:0.04em;">💰 營收</div>
+      <div style="font-size:0.78rem;font-weight:500;color:var(--muted);margin-bottom:0.8rem;">💵 現金 / 儲值</div>
       <div class="form-grid cols-3" style="margin-bottom:1rem">
-        ${ef('營收總額','revenue.total' in r ? r.revenue.total : rev.total, 'rev-total')}
-        ${ef('悠遊卡', rev.easycard, 'rev-easycard')}
-        ${ef('悠遊卡筆數', rev.easycardCount, 'rev-easycardcount')}
-        ${ef('街口支付', rev.jkopay, 'rev-jkopay')}
-        ${ef('街口筆數', rev.jkopayCount, 'rev-jkopaycount')}
-        ${ef('FoodPanda', rev.panda, 'rev-panda')}
-        ${ef('現金收入', rev.cash, 'rev-cash')}
-        ${ef('實收現金', rev.cashActual, 'rev-cashactual')}
-        ${ef('溢收', rev.overflow, 'rev-overflow')}
+        ${ef('實收現金', rec.cashActual, 'rev-cashactual')}
+        ${ef('溢收', rec.overflow, 'rev-overflow')}
+        ${ef('寄杯使用點數', rec.storeUsed, 'store-used')}
+        ${ef('儲值金額', rec.storeValue, 'store-value')}
       </div>
-
-      <div style="font-size:0.78rem;font-weight:500;color:var(--brown-light);margin-bottom:0.8rem;letter-spacing:0.04em;">🏷️ 儲值 / 寄杯</div>
+      <div style="font-size:0.78rem;font-weight:500;color:var(--muted);margin-bottom:0.8rem;">🏦 存款 / 零用金</div>
       <div class="form-grid cols-3" style="margin-bottom:1rem">
-        ${ef('儲值寄杯使用數', store.used, 'store-used')}
-        ${ef('出杯數', store.cups, 'store-cups')}
-        ${ef('儲值金額', store.value, 'store-value')}
-        ${ef('出餐數', store.meals, 'store-meals')}
+        ${ef('零用金收入', rec.pettyIncome, 'fin-pettyincome')}
+        ${ef('派西夫支出', rec.expensePassive, 'fin-exppassive')}
+        ${ef('智域支出', rec.expenseIqrator, 'fin-expiqrator')}
+        ${ef('存款', rec.deposit, 'fin-deposit')}
+        ${ef('零用金餘額', rec.pettyCash, 'fin-pettycash')}
       </div>
-
-      <div style="font-size:0.78rem;font-weight:500;color:var(--brown-light);margin-bottom:0.8rem;letter-spacing:0.04em;">🏦 存款 / 零用金</div>
-      <div class="form-grid cols-3" style="margin-bottom:0.5rem">
-        ${ef('實收現金', rev.cashActual, 'rev-cashactual')}
-        ${ef('今日零用金收入', fin.pettyIncome, 'fin-pettyincome')}
-        ${ef('今日派西夫支出', fin.expensePassive !== undefined ? fin.expensePassive : 0, 'fin-exppassive')}
-        ${ef('今日智域支出', fin.expenseIqrator, 'fin-expiqrator')}
-        ${ef('今日存款', fin.deposit, 'fin-deposit')}
-        ${ef('零用金餘額', fin.pettyCash, 'fin-pettycash')}
-      </div>
-      <div style="font-size:0.72rem;color:var(--muted);margin-bottom:1rem;padding:0.4rem 0.6rem;background:var(--light-gray);border-radius:6px;">
-        💡 存款 ＝ 實收現金 − 零用金收入 ／ 零用金餘額 ＝ 前日餘額 + 零用金收入 − 派西夫支出
-      </div>
-
-      <div style="font-size:0.78rem;font-weight:500;color:var(--brown-light);margin-bottom:0.8rem;letter-spacing:0.04em;">📦 進貨記錄</div>
-      <div id="epur-list-${r.id}">${editPurchaseRows}</div>
-      <button class="btn-add" style="margin-bottom:1rem" onclick="eAddPur('${r.id}')">＋ 新增進貨</button>
-
-      <div style="font-size:0.78rem;font-weight:500;color:var(--brown-light);margin-bottom:0.8rem;letter-spacing:0.04em;">🗄️ 庫存記錄</div>
-      <div id="einv-list-${r.id}">${editInvRows}</div>
-      <button class="btn-add" style="margin-bottom:1rem" onclick="eAddInv('${r.id}')">＋ 新增庫存</button>
-
-      <div style="font-size:0.78rem;font-weight:500;color:var(--brown-light);margin-bottom:0.5rem;letter-spacing:0.04em;">📝 備註</div>
+      <div style="font-size:0.78rem;font-weight:500;color:var(--muted);margin-bottom:0.8rem;">📦 進貨</div>
+      <div id="epur-list-${r.date}">${editPurchaseRows}</div>
+      <button class="btn-add" style="margin-bottom:1rem" onclick="eAddPur('${r.date}')">＋ 新增進貨</button>
+      <div style="font-size:0.78rem;font-weight:500;color:var(--muted);margin-bottom:0.8rem;">🗄️ 庫存</div>
+      <div id="einv-list-${r.date}">${editInvRows}</div>
+      <button class="btn-add" style="margin-bottom:1rem" onclick="eAddInv('${r.date}')">＋ 新增庫存</button>
+      <div style="font-size:0.78rem;font-weight:500;color:var(--muted);margin-bottom:0.5rem;">📝 備註</div>
       <div class="field" style="margin-bottom:1rem">
-        <textarea id="e-notes-${r.id}" style="min-height:60px">${r.notes||''}</textarea>
+        <textarea id="e-notes-${r.date}" style="min-height:60px">${rec.notes||''}</textarea>
       </div>
-
       <div style="display:flex;gap:0.5rem">
-        <button class="btn-save" style="padding:0.5rem 1.5rem;font-size:0.85rem" onclick="saveRecord('${r.id}')">✅ 儲存</button>
+        <button class="btn-save" style="padding:0.5rem 1.5rem;font-size:0.85rem" onclick="saveRecord('${r.date}')">✅ 儲存</button>
         <button class="btn-edit" onclick="cancelEdit()">取消</button>
       </div>
     </div>`;
@@ -1185,68 +1169,67 @@ function renderRecord(r) {
   const actionsHtml = isEditing
     ? `<div class="record-actions">
         <button class="btn-edit" onclick="cancelEdit()">取消編輯</button>
-        <button class="btn-danger" onclick="deleteRecord('${r.id}', '${r.date}')">刪除</button>
+        <button class="btn-danger" onclick="deleteRecord('${r.date}')">刪除</button>
        </div>`
     : `<div class="record-actions">
-        <button class="btn-edit" onclick="startEdit('${r.id}')">編輯</button>
-        <button class="btn-danger" onclick="deleteRecord('${r.id}', '${r.date}')">刪除</button>
+        <button class="btn-edit" onclick="startEdit('${r.date}')">編輯</button>
+        <button class="btn-danger" onclick="deleteRecord('${r.date}')">刪除</button>
        </div>`;
 
   return `
-  <div class="record-card" id="card-${r.id}">
+  <div class="record-card" id="card-${r.date}">
     <div class="record-header">
       <div class="record-date">${formatDate(r.date)}</div>
       <div style="display:flex;align-items:center;gap:1rem">
-        <div class="record-revenue">$${(rev.total||0).toLocaleString()}</div>
+        <div class="record-revenue">$${(pos.revenue||0).toLocaleString()}</div>
         ${actionsHtml}
       </div>
     </div>
     ${!isEditing ? `
     <div class="record-grid">
-      <div class="record-item"><div class="record-item-label">悠遊卡</div><div class="record-item-value">${rev.easycard ? '$'+Number(rev.easycard).toLocaleString() : '—'}</div></div>
-      <div class="record-item"><div class="record-item-label">街口支付</div><div class="record-item-value">${rev.jkopay ? '$'+Number(rev.jkopay).toLocaleString() : '—'}</div></div>
-      <div class="record-item"><div class="record-item-label">FoodPanda</div><div class="record-item-value">${rev.panda ? '$'+Number(rev.panda).toLocaleString() : '—'}</div></div>
-      <div class="record-item"><div class="record-item-label">現金收入</div><div class="record-item-value">${rev.cash ? '$'+Number(rev.cash).toLocaleString() : '—'}</div></div>
-      <div class="record-item"><div class="record-item-label">實收現金</div><div class="record-item-value">${rev.cashActual ? '$'+Number(rev.cashActual).toLocaleString() : '—'}</div></div>
+      <div class="record-item"><div class="record-item-label">悠遊卡</div><div class="record-item-value">${pos.easycard?'$'+Number(pos.easycard).toLocaleString():'—'}</div></div>
+      <div class="record-item"><div class="record-item-label">街口支付</div><div class="record-item-value">${pos.jkopay?'$'+Number(pos.jkopay).toLocaleString():'—'}</div></div>
+      <div class="record-item"><div class="record-item-label">LINE Pay</div><div class="record-item-value">${pos.linepay?'$'+Number(pos.linepay).toLocaleString():'—'}</div></div>
+      <div class="record-item"><div class="record-item-label">FoodPanda</div><div class="record-item-value">${pos.panda?'$'+Number(pos.panda).toLocaleString():'—'}</div></div>
+      <div class="record-item"><div class="record-item-label">現金收入</div><div class="record-item-value">${pos.cash?'$'+Number(pos.cash).toLocaleString():'—'}</div></div>
+      <div class="record-item"><div class="record-item-label">實收現金</div><div class="record-item-value">${rec.cashActual?'$'+Number(rec.cashActual).toLocaleString():'—'}</div></div>
       <div class="record-item" style="border-left:2px solid var(--orange);padding-left:0.5rem">
         <div class="record-item-label">☕ 出杯數</div>
-        <div class="record-item-value" style="color:var(--orange);font-size:1.1rem;font-weight:600;">${store.cups || '—'}</div>
+        <div class="record-item-value" style="color:var(--orange);font-size:1.1rem;font-weight:600;">${pos.cups||'—'}</div>
       </div>
       <div class="record-item" style="border-left:2px solid var(--ink);padding-left:0.5rem">
         <div class="record-item-label">🍽️ 出餐數</div>
-        <div class="record-item-value" style="font-size:1.1rem;font-weight:600;">${store.meals || '—'}</div>
+        <div class="record-item-value" style="font-size:1.1rem;font-weight:600;">${pos.meals||'—'}</div>
       </div>
-      <div class="record-item"><div class="record-item-label">存款</div><div class="record-item-value">${fin.deposit ? '$'+Number(fin.deposit).toLocaleString() : '—'}</div></div>
+      <div class="record-item"><div class="record-item-label">存款</div><div class="record-item-value">${rec.deposit?'$'+Number(rec.deposit).toLocaleString():'—'}</div></div>
       <div class="record-item" style="border-left:2px solid var(--orange);padding-left:0.5rem">
         <div class="record-item-label">派西夫支出</div>
-        <div class="record-item-value" style="color:var(--orange)">${fin.expensePassive !== undefined ? '$'+Number(fin.expensePassive).toLocaleString() : '—'}</div>
+        <div class="record-item-value" style="color:var(--orange)">${rec.expensePassive?'$'+Number(rec.expensePassive).toLocaleString():'—'}</div>
       </div>
       <div class="record-item" style="border-left:2px solid var(--ink-mid);padding-left:0.5rem">
         <div class="record-item-label">智域支出</div>
-        <div class="record-item-value">${fin.expenseIqrator ? '$'+Number(fin.expenseIqrator).toLocaleString() : '—'}</div>
+        <div class="record-item-value">${rec.expenseIqrator?'$'+Number(rec.expenseIqrator).toLocaleString():'—'}</div>
       </div>
-      <div class="record-item"><div class="record-item-label">零用金餘額</div><div class="record-item-value">${fin.pettyCash ? '$'+Number(fin.pettyCash).toLocaleString() : '—'}</div></div>
+      <div class="record-item"><div class="record-item-label">零用金餘額</div><div class="record-item-value">${rec.pettyCash?'$'+Number(rec.pettyCash).toLocaleString():'—'}</div></div>
     </div>
-    ${purchaseTable}
-    ${inventoryTable}
-    ${noteHtml}
-    ` : editForm}
+    ${purchaseTable}${inventoryTable}${noteHtml}` : editForm}
   </div>`;
 }
 
-// Edit helpers for purchase rows
-function eCalcAmt(rid, i) {
-  const price = parseFloat(document.getElementById(`epur-price-${rid}-${i}`)?.value)||0;
-  const qty = parseFloat(document.getElementById(`epur-qty-${rid}-${i}`)?.value)||0;
-  const amt = document.getElementById(`epur-amt-${rid}-${i}`);
-  if (amt) amt.value = price && qty ? price * qty : '';
+// Edit helpers
+function eCalcAmt(rid,i){
+  const price=parseFloat(document.getElementById(`epur-price-${rid}-${i}`)?.value)||0;
+  const qty=parseFloat(document.getElementById(`epur-qty-${rid}-${i}`)?.value)||0;
+  const amt=document.getElementById(`epur-amt-${rid}-${i}`);
+  if(amt) amt.value=price&&qty?price*qty:'';
 }
-function eAddPur(rid) {
-  const list = document.getElementById(`epur-list-${rid}`);
-  const i = list.children.length;
-  const div = document.createElement('div');
-  div.className = 'purchase-row'; div.id = `epur-row-${rid}-${i}`;
-  div.innerHTML = `
+function eAddPur(rid){
+  const list=document.getElementById(`epur-list-${rid}`);
+  const i=list.children.length;
+  const div=document.createElement('div');
+  div.className='purchase-row'; div.id=`epur-row-${rid}-${i}`;
+  div.style.gridTemplateColumns='2fr 1fr 1fr 1fr 1.2fr 1fr auto';
+  div.innerHTML=`
     <div class="field"><label>品項</label><input type="text" id="epur-item-${rid}-${i}"></div>
     <div class="field"><label>單價</label><input type="number" id="epur-price-${rid}-${i}" oninput="eCalcAmt('${rid}',${i})"></div>
     <div class="field"><label>數量</label><input type="number" id="epur-qty-${rid}-${i}" oninput="eCalcAmt('${rid}',${i})"></div>
@@ -1254,20 +1237,19 @@ function eAddPur(rid) {
     <div class="field purchase-supplier"><label>廠商</label><input type="text" id="epur-sup-${rid}-${i}"></div>
     <div class="field"><label>歸屬</label>
       <select id="epur-owner-${rid}-${i}" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.5rem;font-size:0.85rem;font-family:'Noto Sans TC',sans-serif;">
-        <option value="派西夫">派西夫</option>
-        <option value="智域">智域</option>
+        <option value="派西夫">派西夫</option><option value="智域">智域</option>
       </select>
     </div>
     <button class="btn-icon" onclick="eRemovePur('${rid}',${i})">✕</button>`;
   list.appendChild(div);
 }
-function eRemovePur(rid, i) { document.getElementById(`epur-row-${rid}-${i}`)?.remove(); }
-function eAddInv(rid) {
-  const list = document.getElementById(`einv-list-${rid}`);
-  const i = list.children.length;
-  const div = document.createElement('div');
-  div.className = 'purchase-row'; div.id = `einv-row-${rid}-${i}`;
-  div.innerHTML = `
+function eRemovePur(rid,i){ document.getElementById(`epur-row-${rid}-${i}`)?.remove(); }
+function eAddInv(rid){
+  const list=document.getElementById(`einv-list-${rid}`);
+  const i=list.children.length;
+  const div=document.createElement('div');
+  div.className='purchase-row'; div.id=`einv-row-${rid}-${i}`;
+  div.innerHTML=`
     <div class="field"><label>類別</label><input type="text" id="einv-cat-${rid}-${i}"></div>
     <div class="field"><label>品項</label><input type="text" id="einv-item-${rid}-${i}"></div>
     <div class="field"><label>數量</label><input type="text" id="einv-qty-${rid}-${i}"></div>
@@ -1276,105 +1258,78 @@ function eAddInv(rid) {
     <button class="btn-icon" onclick="eRemoveInv('${rid}',${i})">✕</button>`;
   list.appendChild(div);
 }
-function eRemoveInv(rid, i) { document.getElementById(`einv-row-${rid}-${i}`)?.remove(); }
+function eRemoveInv(rid,i){ document.getElementById(`einv-row-${rid}-${i}`)?.remove(); }
 
-function startEdit(id) { editingId = id; renderRecords(allRecords); }
-function cancelEdit() { editingId = null; renderRecords(allRecords); }
+function startEdit(date){ editingId=date; renderRecords(allRecords); }
+function cancelEdit(){ editingId=null; renderRecords(allRecords); }
 
-async function saveRecord(id) {
-  const fb = window._firebase;
-  const rid = id;
-  // Collect purchases
+async function saveRecord(date) {
+  const rid = date;
   const purList = document.getElementById(`epur-list-${rid}`);
-  const purchases = Array.from(purList?.children||[]).map((row,i) => ({
-    item: document.querySelector(`[id="epur-item-${rid}-${i}"]`)?.value||'',
-    price: document.querySelector(`[id="epur-price-${rid}-${i}"]`)?.value||'',
-    qty: document.querySelector(`[id="epur-qty-${rid}-${i}"]`)?.value||'',
-    amount: document.querySelector(`[id="epur-amt-${rid}-${i}"]`)?.value||'',
+  const purchases = Array.from(purList?.children||[]).map((row,i)=>({
+    item:     document.querySelector(`[id="epur-item-${rid}-${i}"]`)?.value||'',
+    price:    parseFloat(document.querySelector(`[id="epur-price-${rid}-${i}"]`)?.value)||0,
+    qty:      parseFloat(document.querySelector(`[id="epur-qty-${rid}-${i}"]`)?.value)||0,
+    amount:   parseFloat(document.querySelector(`[id="epur-amt-${rid}-${i}"]`)?.value)||0,
     supplier: document.querySelector(`[id="epur-sup-${rid}-${i}"]`)?.value||'',
-    owner: document.querySelector(`[id="epur-owner-${rid}-${i}"]`)?.value||'派西夫',
-  })).filter(p => p.item);
-  // Collect inventory
+    owner:    document.querySelector(`[id="epur-owner-${rid}-${i}"]`)?.value||'派西夫',
+  })).filter(p=>p.item);
   const invList = document.querySelector(`[id="einv-list-${rid}"]`);
-  const inventory = Array.from(invList?.children||[]).map((row,i) => ({
+  const inventories = Array.from(invList?.children||[]).map((row,i)=>({
     category: document.querySelector(`[id="einv-cat-${rid}-${i}"]`)?.value||'',
-    item: document.querySelector(`[id="einv-item-${rid}-${i}"]`)?.value||'',
-    qty: document.querySelector(`[id="einv-qty-${rid}-${i}"]`)?.value||'',
-    unit: document.querySelector(`[id="einv-unit-${rid}-${i}"]`)?.value||'',
-    note: document.querySelector(`[id="einv-note-${rid}-${i}"]`)?.value||'',
-  })).filter(p => p.item);
-
-  const g = (eid) => {
-    // Firebase IDs can contain special chars — use querySelector with escaped selector
-    try {
-      const el = document.querySelector(`[id="e-${eid}-${rid}"]`);
-      return parseFloat(el?.value) || 0;
-    } catch(e) { return 0; }
+    item:     document.querySelector(`[id="einv-item-${rid}-${i}"]`)?.value||'',
+    qty:      document.querySelector(`[id="einv-qty-${rid}-${i}"]`)?.value||'',
+    unit:     document.querySelector(`[id="einv-unit-${rid}-${i}"]`)?.value||'',
+    note:     document.querySelector(`[id="einv-note-${rid}-${i}"]`)?.value||'',
+  })).filter(p=>p.item);
+  const g = eid => { try{ return parseFloat(document.querySelector(`[id="e-${eid}-${rid}"]`)?.value)||0; }catch(e){return 0;} };
+  const record = {
+    cashActual:     g('rev-cashactual'),
+    overflow:       g('rev-overflow'),
+    storeUsed:      g('store-used'),
+    storeValue:     g('store-value'),
+    pettyIncome:    g('fin-pettyincome'),
+    expensePassive: g('fin-exppassive'),
+    expenseIqrator: g('fin-expiqrator'),
+    expense:        g('fin-exppassive')+g('fin-expiqrator'),
+    deposit:        g('fin-deposit'),
+    pettyCash:      g('fin-pettycash'),
+    notes:          document.querySelector(`[id="e-notes-${rid}"]`)?.value||'',
   };
-  const updates = {
-    date: document.querySelector(`[id="e-date-${rid}"]`)?.value || '',
-    revenue: {
-      total: g('rev-total'), easycard: g('rev-easycard'), easycardCount: g('rev-easycardcount'),
-      jkopay: g('rev-jkopay'), jkopayCount: g('rev-jkopaycount'), panda: g('rev-panda'),
-      cash: g('rev-cash'), cashActual: g('rev-cashactual'), overflow: g('rev-overflow'),
-    },
-    store: { used: g('store-used'), cups: g('store-cups'), value: g('store-value'), meals: g('store-meals') },
-    finance: {
-      deposit: g('fin-deposit'),
-      expensePassive: g('fin-exppassive'),
-      expenseIqrator: g('fin-expiqrator'),
-      expense: g('fin-exppassive') + g('fin-expiqrator'),
-      pettyCash: g('fin-pettycash'),
-      pettyIncome: g('fin-pettyincome'),
-    },
-    notes: document.querySelector(`[id="e-notes-${rid}"]`)?.value||'',
-    purchases, inventory,
-  };
-  try {
-    await fb.updateDoc(fb.doc(fb.db, 'records', id), updates);
-    editingId = null;
-  } catch(e) { alert('儲存失敗：' + e.message); }
+  const res = await API.saveRecord(date, record, purchases, inventories);
+  if (res.isSuccess) { editingId=null; await loadRecords(); }
+  else { alert('儲存失敗：'+res.message); }
 }
 
-async function deleteRecord(id, date) {
+async function deleteRecord(date) {
   if (!confirm(`確定要刪除 ${formatDate(date)} 的記錄嗎？`)) return;
-  const fb = window._firebase;
-  try {
-    await fb.deleteDoc(fb.doc(fb.db, 'records', id));
-  } catch(e) { alert('刪除失敗：' + e.message); }
+  const res = await API.deleteRecord(date);
+  if (res.isSuccess) { await loadRecords(); }
+  else { alert('刪除失敗：'+res.message); }
 }
 
-// Admin add
 function toggleNewForm() {
-  const f = document.getElementById('new-record-form');
-  f.classList.toggle('show');
+  document.getElementById('new-record-form').classList.toggle('show');
 }
 async function adminAddRecord() {
-  const fb = window._firebase;
   const status = document.getElementById('new-record-status');
-  try {
-    const data = {
-      date: document.getElementById('new-date').value,
-      revenue: {
-        total: parseFloat(document.getElementById('new-rev-total').value)||0,
-        easycard: parseFloat(document.getElementById('new-easycard').value)||0,
-        jkopay: parseFloat(document.getElementById('new-jkopay').value)||0,
-        panda: parseFloat(document.getElementById('new-panda').value)||0,
-        cash: parseFloat(document.getElementById('new-cash').value)||0,
-      },
-      finance: {
-        deposit: parseFloat(document.getElementById('new-deposit').value)||0,
-        expense: parseFloat(document.getElementById('new-expense').value)||0,
-        pettyCash: parseFloat(document.getElementById('new-petty').value)||0,
-      },
-      notes: document.getElementById('new-notes').value,
-      purchases: [], inventory: [],
-      createdAt: new Date().toISOString(),
-    };
-    await fb.addDoc(fb.collection(fb.db, 'records'), data);
-    showStatus(status, '✅ 新增成功', 'success');
+  const date   = document.getElementById('new-date').value;
+  if (!date) { showStatus(status,'❌ 請選擇日期','error'); return; }
+  const record = {
+    cashActual:     parseFloat(document.getElementById('new-cash').value)||0,
+    deposit:        parseFloat(document.getElementById('new-deposit').value)||0,
+    expensePassive: parseFloat(document.getElementById('new-expense').value)||0,
+    expenseIqrator: 0, expense: parseFloat(document.getElementById('new-expense').value)||0,
+    pettyCash:      parseFloat(document.getElementById('new-petty').value)||0,
+    pettyIncome:0, storeUsed:0, storeValue:0, overflow:0,
+    notes: document.getElementById('new-notes').value,
+  };
+  const res = await API.saveRecord(date, record, [], []);
+  if (res.isSuccess) {
+    showStatus(status,'✅ 新增成功','success');
     toggleNewForm();
-  } catch(e) { showStatus(status, '❌ ' + e.message, 'error'); }
+    await loadRecords();
+  } else { showStatus(status,'❌ '+res.message,'error'); }
 }
 </script>
 </body>
